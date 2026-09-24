@@ -1,8 +1,9 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
+import Brand from '@/components/Brand';
 import ThemeToggle from '@/components/ThemeToggle';
 export default function Nav(){
   return <nav className="nav">
-    <Link href="/" className="brand">NOVENE<span className="accent">TECH</span> CAMPUS</Link>
+    <Brand />
     <div className="nav-links">
       <Link href="/programme">Programme</Link>
       <Link href="/academy">Academy</Link>

@@ -1,4 +1,5 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
+import Brand from '@/components/Brand';
 import ThemeToggle from '@/components/ThemeToggle';
 import TasksWidget from '@/components/TasksWidget';
 import { logoutAction } from '@/app/auth/actions';
@@ -15,7 +16,7 @@ export default async function Dashboard() {
   return (
     <div className="dash">
       <aside className="side">
-        <p className="brand">NOVENETECH <span className="accent">CAMPUS</span></p>
+        <Brand />
         <Link href="/dashboard">Tableau de bord</Link>
         <Link href="/programme">Cours</Link>
         <Link href="/crm">Mes prospects</Link>

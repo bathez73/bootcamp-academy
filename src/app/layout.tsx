@@ -1,4 +1,4 @@
-import './globals.css';
+﻿import './globals.css';
 import type { Metadata } from 'next';
 import { Sora, Inter } from 'next/font/google';
 import { THEME_SWITCH_SCRIPT } from '@/lib/theme';
@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Novenetech Campus',
+  title: 'Bootcamp-Academy by Novenetech',
   description: 'De 0 à ton premier client digital',
 };
 

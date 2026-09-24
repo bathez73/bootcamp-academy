@@ -1,4 +1,5 @@
 ﻿import Link from 'next/link';
+import Brand from '@/components/Brand';
 import Nav from '@/components/Nav';
 
 const whatsapp = 'https://wa.me/22952527913';
@@ -105,7 +106,7 @@ export default function Home() {
       </div>
       <footer className="home-footer">
         <div className="wrap">
-          <Link href="/" className="brand">NOVENE<span className="accent">TECH</span> CAMPUS</Link>
+          <Brand />
           <nav className="home-footer-links" aria-label="Navigation de pied de page">
             <Link href="/programme">Programme</Link><Link href="/login">Rejoindre la cohorte</Link><Link href="/login">Espace étudiant</Link><a href={whatsapp} target="_blank" rel="noopener noreferrer">22952527913</a>
           </nav>

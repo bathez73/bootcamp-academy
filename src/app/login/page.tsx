@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import Brand from '@/components/Brand';
 import { Suspense } from 'react';
 import { useActionState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -14,7 +15,7 @@ function LoginForm() {
     <div className="wrap" style={{ maxWidth: 520 }}>
       <div className="page-tools"><ThemeToggle /></div>
       <section className="section" style={{ paddingTop: 30 }}>
-        <p className="brand">NOVENE<span className="accent">TECH</span> CAMPUS</p>
+        <Brand />
         <div className="card">
           <h1>Connexion étudiant</h1>
           <p className="muted">Accède à ton Challenge 28 jours.</p>

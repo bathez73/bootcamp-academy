@@ -396,3 +396,14 @@ table.plain {
 .home-whatsapp { position: fixed; bottom: 20px; right: 20px; z-index: 10; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: #168343; color: #fff; box-shadow: 0 0 0 8px rgba(22, 131, 67, 0.15); }
 @media (max-width: 900px) { .home-benefits { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .home-page .section { padding: 36px 0; } .home-highlights { flex-direction: column; } .home-page .card { padding: 22px; } .home-faq .card { padding: 0; } .home-page h2 { font-size: 28px; } }
+
+/* Identité commune : logo original et signature adaptés au thème. */
+.site-brand { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 100%; color: var(--fg); line-height: 1.2; }
+.site-brand-title { font-size: clamp(18px, 2.2vw, 25px); font-weight: 800; letter-spacing: -0.035em; overflow-wrap: anywhere; }
+.site-brand-signature { display: flex; align-items: center; gap: 8px; }
+.site-brand-by { font-family: var(--font-sans), sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); }
+.site-brand-logo { display: block; width: 155px; height: auto; }
+[data-theme="dark"] .site-brand-logo { filter: brightness(1.65) saturate(1.05); }
+.side a.site-brand { display: inline-flex; padding: 0; margin-bottom: 20px; color: var(--fg); background: transparent; }
+.side .site-brand-title { font-size: 19px; }
+@media (max-width: 600px) { .site-brand-logo { width: 140px; } }
