@@ -31,7 +31,11 @@ function LoginForm() {
             <button type="submit" className="btn" disabled={pending} style={{ opacity: pending ? 0.6 : 1 }}>
               {pending ? 'Connexion…' : 'Se connecter'}
             </button>
-          </form>
+</form>
+          <div className="authLinks" style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <a href="/signup" className="muted" style={{ fontSize: 14 }}>Pas encore de compte ? Créer un compte gratuit</a>
+            <a href="/forgot-password" className="muted" style={{ fontSize: 14 }}>Mot de passe oublié ?</a>
+          </div>
           <p className="muted" style={{ marginTop: 16 }}>
             MVP : Supabase Auth prend le relais dès que les variables d&apos;environnement sont définies.
           </p>

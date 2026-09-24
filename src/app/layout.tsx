@@ -19,6 +19,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Bootcamp-Academy by Novenetech',
   description: 'De 0 à ton premier client digital',
+  metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    siteName: 'Bootcamp-Academy by Novenetech',
+    title: 'Bootcamp-Academy by Novenetech',
+    description: 'De 0 à ton premier client digital',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bootcamp-Academy by Novenetech',
+    description: 'De 0 à ton premier client digital',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

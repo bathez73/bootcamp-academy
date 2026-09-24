@@ -1,7 +1,28 @@
+import { redirect } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getServiceRoleClient } from '@/lib/supabase/server';
+import { getServerClient, getServiceRoleClient } from '@/lib/supabase/server';
 
 export default async function Admin() {
+  // Accès limité aux comptes marqués is_admin (+ mode démo sans Supabase).
+  const supabase = await getServerClient();
+  let isAdmin = false;
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+      isAdmin = Boolean(profile?.is_admin);
+    }
+  } else {
+    isAdmin = true; // mode démo uniquement
+  }
+  if (!isAdmin) {
+    redirect('/dashboard');
+  }
+
   let ventes = 0;
   let chiffreAffaires = 0;
   let enAttente = 0;

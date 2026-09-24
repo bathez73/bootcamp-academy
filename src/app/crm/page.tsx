@@ -47,8 +47,11 @@ export default function CRM() {
   useEffect(() => {
     const sb = getBrowserClient();
     if (!sb) {
-      setProspects(loadLocal());
-      setMode('local');
+      // Mode démo : rechargement du stockage local en micro-tâche.
+      void Promise.resolve().then(() => {
+        setProspects(loadLocal());
+        setMode('local');
+      });
       return;
     }
     sb.auth.getUser().then(({ data }) => {

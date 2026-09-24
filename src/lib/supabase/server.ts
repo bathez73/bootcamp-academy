@@ -1,12 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import {
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY,
-  isSupabaseConfigured,
-  isSupabaseServerConfigured,
-} from './config';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from './config';
+import { SUPABASE_SERVICE_ROLE_KEY, isSupabaseServerConfigured } from './server-config';
 
 export async function getServerClient() {
   if (!isSupabaseConfigured) return null;

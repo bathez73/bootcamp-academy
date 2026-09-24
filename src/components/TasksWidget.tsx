@@ -36,8 +36,11 @@ export default function TasksWidget() {
   useEffect(() => {
     const sb = getBrowserClient();
     if (!sb) {
-      const local = loadLocal();
-      if (local) setDone(local);
+      // Mode démo : rechargement du stockage local en micro-tâche.
+      void Promise.resolve().then(() => {
+        const local = loadLocal();
+        if (local) setDone(local);
+      });
       return;
     }
     sb.auth.getUser().then(({ data }) => {
