@@ -1,0 +1,3 @@
+import Nav from '@/components/Nav';
+const weeks=[['Semaine 1','Choisir ta compétence, ta niche, ton offre et ton prix.'],['Semaine 2','Produire avec l’IA et créer 3 réalisations pour ton portfolio.'],['Semaine 3','Construire une liste de prospects et lancer 20 à 50 prises de contact.'],['Semaine 4','Rendez-vous, objections, acompte, livraison et témoignage client.']];
+export default function Programme(){return <div className="wrap"><Nav/><section className="section"><p className="accent"><b>PROGRAMME</b></p><h1>28 jours vers ton premier système de revenus digital</h1><div className="grid">{weeks.map(w=><div className="card" key={w[0]}><h2>{w[0]}</h2><p className="muted">{w[1]}</p></div>)}</div></section></div>}

@@ -1,0 +1,54 @@
+# ---- Dépendances ----
+/node_modules
+/.pnp
+.pnp.js
+
+# ---- Build Next.js ----
+/.next/
+/out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Variables d'environnement & secrets - JAMAIS commiter ----
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# ---- Clés, certificats & fichiers de comptes ----
+*.pem
+*.key
+*.p12
+*.pfx
+*.p8
+*.crt
+*.cer
+*.secret
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+credentials.json
+service-account.json
+*.service-account.json
+
+# ---- Logs & divers ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.suo
