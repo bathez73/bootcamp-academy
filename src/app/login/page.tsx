@@ -1,9 +1,13 @@
 'use client';
+import { Suspense } from 'react';
 import { useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { loginAction, type AuthState } from '@/app/auth/actions';
 import ThemeToggle from '@/components/ThemeToggle';
 
-export default function Login() {
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const [state, formAction, pending] = useActionState<AuthState, FormData>(loginAction, { error: null });
 
   return (
@@ -15,6 +19,7 @@ export default function Login() {
           <h1>Connexion étudiant</h1>
           <p className="muted">Accède à ton Challenge 28 jours.</p>
           <form action={formAction}>
+            <input type="hidden" name="redirect" value={redirectTo} />
             <label htmlFor="login-email">Email</label>
             <input id="login-email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.com" />
             <label htmlFor="login-password">Mot de passe</label>
@@ -32,5 +37,13 @@ export default function Login() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

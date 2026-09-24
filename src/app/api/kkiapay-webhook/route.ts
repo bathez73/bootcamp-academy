@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { FORMATIONS_MAP } from '@/lib/formations';
 import { getServiceRoleClient } from '@/lib/supabase/server';
 
@@ -102,18 +104,18 @@ export async function POST(req: NextRequest) {
     }
     const pdfUrl = `${process.env.SITE_URL}/pdf/${formation.file}`;
 
+    // Lecture directe du PDF sur le disque (pas de fetch interne : il serait
+    // intercepté par le middleware d'auth et renverrait la page de connexion).
     let attachment: { name: string; content: string } | undefined;
     try {
-      const pdfResp = await fetch(pdfUrl);
-      if (pdfResp.ok) {
-        const buf = await pdfResp.arrayBuffer();
-        attachment = {
-          name: formation.file,
-          content: Buffer.from(buf).toString('base64'),
-        };
-      }
+      const filePath = join(process.cwd(), 'public', 'pdf', formation.file);
+      const buffer = await readFile(filePath);
+      attachment = {
+        name: formation.file,
+        content: buffer.toString('base64'),
+      };
     } catch (err) {
-      console.error('Impossible de récupérer le PDF:', err);
+      console.error('Impossible de lire le PDF sur le disque:', err);
     }
 
     const htmlContent = attachment

@@ -13,7 +13,9 @@ export async function loginAction(
 ): Promise<AuthState> {
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
-  const redirectTo = formData.get('redirect') ? String(formData.get('redirect')) : '/dashboard';
+  // Anti open-redirect : on n'accepte qu'un chemin interne, jamais d'URL absolue.
+  const rawRedirect = String(formData.get('redirect') || '');
+  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.includes('://') ? rawRedirect : '/dashboard';
 
   if (!EMAIL_RE.test(email)) {
     return { error: "Merci d'indiquer un email valide." };
