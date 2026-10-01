@@ -19,7 +19,7 @@ function LoginForm() {
         <div className="card">
           <h1>Connexion étudiant</h1>
           <p className="muted">Accède à ton Challenge 28 jours.</p>
-          <form action={formAction}>
+          {searchParams.has('unavailable') && <p role="alert">La connexion est temporairement indisponible.</p>}{searchParams.has('authError') && <p role="alert">Lien invalide ou expiré. Demande un nouveau lien ou connecte-toi.</p>}<form action={formAction}>
             <input type="hidden" name="redirect" value={redirectTo} />
             <label htmlFor="login-email">Email</label>
             <input id="login-email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.com" />
@@ -37,7 +37,7 @@ function LoginForm() {
             <a href="/forgot-password" className="muted" style={{ fontSize: 14 }}>Mot de passe oublié ?</a>
           </div>
           <p className="muted" style={{ marginTop: 16 }}>
-            MVP : Supabase Auth prend le relais dès que les variables d&apos;environnement sont définies.
+            Besoin d’aide ? Contacte notre équipe depuis la page d’inscription.
           </p>
         </div>
       </section>

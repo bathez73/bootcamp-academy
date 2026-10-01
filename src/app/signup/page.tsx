@@ -14,8 +14,8 @@ export default function Signup() {
         <Brand />
         <div className="card">
           <h1>Créer un compte</h1>
-          <p className="muted">Rejoins la cohorte Bootcamp-Academy.</p>
-          <form action={formAction}>
+          <p className="muted">Crée ton espace personnel. La réservation de la cohorte se confirme séparément avec notre équipe.</p>
+          {state.success ? <p role="status">Vérifie tes emails pour confirmer ton adresse, puis <a className="text-link" href="/inscription">poursuis ton inscription</a>.</p> : <form action={formAction}>
             <label htmlFor="signup-name">Prénom / Nom</label>
             <input id="signup-name" name="full_name" type="text" autoComplete="name" placeholder="Awa D." />
             <label htmlFor="signup-email">Email</label>
@@ -28,7 +28,7 @@ export default function Signup() {
             <button type="submit" className="btn" disabled={pending} style={{ opacity: pending ? 0.6 : 1 }}>
               {pending ? 'Création…' : 'Créer mon compte'}
             </button>
-          </form>
+          </form>}
           <div className="authLinks" style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <a href="/login" className="muted" style={{ fontSize: 14 }}>Déjà un compte ? Se connecter</a>
           </div>

@@ -15,6 +15,8 @@ export default function ResetPassword() {
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
       if (!cancelled) setValid(Boolean(data.session));
+    }).catch(() => {
+      if (!cancelled) setValid(false);
     });
     return () => {
       cancelled = true;
@@ -28,7 +30,12 @@ export default function ResetPassword() {
         <Brand />
         <div className="card">
           <h1>Nouveau mot de passe</h1>
-          {valid === null ? (
+          {state.success ? (
+            <div role="status">
+              <p>Ton nouveau mot de passe est enregistré.</p>
+              <a className="text-link" href="/login">Se connecter avec le nouveau mot de passe</a>
+            </div>
+          ) : valid === null ? (
             <p className="muted">Vérification de la session…</p>
           ) : valid ? (
             <>
@@ -37,7 +44,10 @@ export default function ResetPassword() {
                 <label htmlFor="new-password">Mot de passe</label>
                 <input id="new-password" name="password" type="password" required minLength={6} autoComplete="new-password" placeholder="••••••••" />
                 {state.error && (
-                  <p className="accent" role="alert" style={{ fontWeight: 600 }}>{state.error}</p>
+                  <div>
+                    <p className="accent" role="alert" style={{ fontWeight: 600 }}>{state.error}</p>
+                    <a className="text-link" href="/forgot-password">Demander un nouveau lien</a>
+                  </div>
                 )}
                 <button type="submit" className="btn" disabled={pending} style={{ opacity: pending ? 0.6 : 1 }}>
                   {pending ? 'Enregistrement…' : 'Enregistrer le mot de passe'}

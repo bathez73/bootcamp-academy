@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="fr">
+<body>
+  <h2>Novenetech Campus — Nouveau mot de passe</h2>
+  <p>Vous avez demandé à modifier votre mot de passe.</p>
+  {{ if eq .RedirectTo "http://localhost:3000/auth/callback?next=/auth/reset-password" }}
+  <p><a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=recovery">Choisir mon nouveau mot de passe</a></p>
+  {{ else }}
+  <p><a href="{{ .ConfirmationURL }}">Choisir mon nouveau mot de passe</a></p>
+  {{ end }}
+  <p>Ce lien est à usage unique. Utilisez le dernier email reçu.</p>
+  <p>Si vous n'avez pas demandé ce changement, ignorez cet email.</p>
+</body>
+</html>

@@ -5,10 +5,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from './config'
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  if (!isSupabaseConfigured) {
-    // Mode démo : Supabase non configuré, routes privées restent accessibles.
-    return response;
-  }
+  if (!isSupabaseConfigured) { return request.nextUrl.pathname === '/academy' ? response : NextResponse.redirect(new URL('/login?unavailable=1', request.url)); }
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
@@ -25,9 +22,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (!user) {
+  // A temporary Supabase/network failure is not proof that the user signed out.
+  if (error) return response;
+
+  if (!user && request.nextUrl.pathname !== '/academy') {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', request.nextUrl.pathname);

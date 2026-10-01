@@ -1,0 +1,5 @@
+import { test } from 'node:test';import assert from 'node:assert/strict';
+import { safeRedirect } from '../src/lib/redirect.ts';import { validPayment } from '../src/lib/payment-validation.ts';import { MISSIONS } from '../src/lib/curriculum.ts';
+test('only internal redirects are accepted',()=>{for(const value of ['//evil.example','https://evil.example','/\\evil.example',' /dashboard','/ /evil'])assert.equal(safeRedirect(value),'/dashboard');assert.equal(safeRedirect('/crm?status=Client#list'),'/crm?status=Client#list');});
+test('invalid or missing payment amounts fail closed',()=>{for(const value of [undefined,null,'', 'abc',NaN,Infinity,-1,0,48999,{},true])assert.equal(validPayment('tx_123',value,49000),false);assert.equal(validPayment('tx_123',49000,49000),true);assert.equal(validPayment('tx_123','49000',49000),true);assert.equal(validPayment('',49000,49000),false);});
+test('curriculum covers each day with a deliverable',()=>{assert.equal(MISSIONS.length,28);assert.deepEqual(MISSIONS.map(m=>m.day),Array.from({length:28},(_,i)=>i+1));assert.ok(MISSIONS.every(m=>m.instruction&&m.deliverable));});

@@ -1,134 +1,205 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { getBrowserClient } from '@/lib/supabase/client';
+import { MISSIONS } from '@/lib/curriculum';
 
-const TASKS = [
-  'Définis ton service',
-  'Choisis ta niche',
-  'Construis ton offre',
-  'Fixe ton prix',
-  'Crée ton premier exemple',
-];
+const PIPELINE_STATUSES = ['À contacter', 'Contacté', 'Intéressé', 'Client'] as const;
 
-const STORAGE_KEY = 'novenetech-tasks';
-const DAY_OFFSET = 1; // première ligne du challenge = jour 1
-
-type Sync = 'none' | 'supabase';
-
-function loadLocal(): boolean[] | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw) as boolean[];
-      if (Array.isArray(arr)) return arr;
-    }
-  } catch {
-    /* stockage illisible */
-  }
-  return null;
-}
+type ProspectStatus = (typeof PIPELINE_STATUSES)[number];
 
 export default function TasksWidget() {
-  const [done, setDone] = useState<boolean[]>(TASKS.map((_, i) => i < 2));
-  const [sync, setSync] = useState<Sync>('none');
-  const [userId, setUserId] = useState<string | null>(null);
+	const [done, setDone] = useState<number[]>([]);
+	const [userId, setUserId] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState('');
+	const [insightError, setInsightError] = useState('');
+	const [prospectCounts, setProspectCounts] = useState<Record<ProspectStatus, number>>({
+		'À contacter': 0,
+		Contacté: 0,
+		Intéressé: 0,
+		Client: 0,
+	});
+	const [attempt, setAttempt] = useState(0);
 
-  useEffect(() => {
-    const sb = getBrowserClient();
-    if (!sb) {
-      // Mode démo : rechargement du stockage local en micro-tâche.
-      void Promise.resolve().then(() => {
-        const local = loadLocal();
-        if (local) setDone(local);
-      });
-      return;
-    }
-    sb.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        const local = loadLocal();
-        if (local) setDone(local);
-        return;
-      }
-      setUserId(data.user.id);
-      setSync('supabase');
-      sb.from('progress')
-        .select('day, done')
-        .in('day', TASKS.map((_, i) => i + DAY_OFFSET))
-        .then(({ data: rows }) => {
-          if (!rows) return;
-          const arr = TASKS.map((_, i) => i < 2);
-          rows.forEach((r) => {
-            const idx = (r.day as number) - DAY_OFFSET;
-            if (idx >= 0 && idx < TASKS.length) arr[idx] = Boolean(r.done);
-          });
-          setDone(arr);
-        });
-    });
-  }, []);
+	useEffect(() => {
+		let active = true;
 
-  const persist = useCallback(
-    (i: number, arr: boolean[]) => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-      } catch {
-        /* stockage indisponible */
-      }
-      if (sync === 'supabase' && userId) {
-        const sb = getBrowserClient();
-        if (!sb) return;
-        sb.from('progress')
-          .upsert({ user_id: userId, day: i + DAY_OFFSET, done: arr[i] }, { onConflict: 'user_id,day' })
-          .then(({ error }) => {
-            if (error) console.error('Erreur sauvegarde progression:', error.message);
-          });
-      }
-    },
-    [sync, userId],
-  );
+		async function load() {
+			try {
+				const supabase = getBrowserClient();
+				if (!supabase) throw Error('Connexion indisponible.');
 
-  function toggle(i: number) {
-    setDone((d) => {
-      const next = [...d];
-      next[i] = !next[i];
-      persist(i, next);
-      return next;
-    });
-  }
+				const { data, error: authError } = await supabase.auth.getUser();
+				if (authError || !data.user) throw Error('Reconnecte-toi pour retrouver ta progression.');
 
-  const count = done.filter(Boolean).length;
-  const pct = Math.round((count / TASKS.length) * 100);
+				const [progressResult, prospectsResult] = await Promise.all([
+					supabase.from('progress').select('day, done').eq('user_id', data.user.id),
+					supabase.from('crm_prospects').select('statut'),
+				]);
 
-  return (
-    <>
-      <div className="card">
-        <p style={{ margin: '0 0 6px', color: 'var(--muted)' }}>
-          Progression globale — <b style={{ color: 'var(--fg)' }}>{pct}%</b>
-        </p>
-        <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-          {count} réalisation{count > 1 ? 's' : ''} sur {TASKS.length}
-          {sync === 'supabase' ? ' — synchronisée avec ton compte.' : ' — coche tes tâches au fil de la semaine.'}
-        </p>
-        <div className="progress"><span style={{ width: `${pct}%` }} /></div>
-      </div>
+				if (progressResult.error) throw Error('Impossible de charger la progression.');
 
-      <section className="section" style={{ paddingTop: 36 }}>
-        <h2>Cette semaine</h2>
-        {TASKS.map((x, i) => (
-          <div className="day" key={x}>
-            <span>Jour {i + DAY_OFFSET} — {x}</span>
-            <button
-              type="button"
-              className={`day-status${done[i] ? ' done' : ''}`}
-              onClick={() => toggle(i)}
-              aria-pressed={done[i]}
-              aria-label={`${x} : ${done[i] ? 'terminé' : 'à faire'}`}
-              title={done[i] ? 'Marquer comme à faire' : 'Marquer comme terminé'}
-            >
-              {done[i] ? '✓' : '→'}
-            </button>
-          </div>
-        ))}
-      </section>
-    </>
-  );
+				if (active) {
+					setUserId(data.user.id);
+					setDone((progressResult.data || []).filter((row) => row.done).map((row) => Number(row.day)));
+					setError('');
+
+					if (prospectsResult.error) {
+						setInsightError('Le pipeline CRM est momentanément indisponible.');
+					} else {
+						const counts: Record<ProspectStatus, number> = {
+							'À contacter': 0,
+							Contacté: 0,
+							Intéressé: 0,
+							Client: 0,
+						};
+						(prospectsResult.data || []).forEach((prospect) => {
+							if (PIPELINE_STATUSES.includes(prospect.statut as ProspectStatus)) {
+								counts[prospect.statut as ProspectStatus] += 1;
+							}
+						});
+						setProspectCounts(counts);
+						setInsightError('');
+					}
+				}
+			} catch (loadError) {
+				if (active) setError(loadError instanceof Error ? loadError.message : 'Chargement impossible.');
+			} finally {
+				if (active) setLoading(false);
+			}
+		}
+
+		void load();
+		return () => { active = false; };
+	}, [attempt]);
+
+	async function toggle(day: number) {
+		if (busy || loading || !userId) return;
+		setBusy(true);
+		setError('');
+		try {
+			const supabase = getBrowserClient();
+			if (!supabase) throw Error();
+			const next = !done.includes(day);
+			const { error: saveError } = await supabase.from('progress').upsert(
+				{ user_id: userId, day, done: next, updated_at: new Date().toISOString() },
+				{ onConflict: 'user_id,day' },
+			);
+			if (saveError) throw saveError;
+			setDone((current) => next ? [...current, day] : current.filter((currentDay) => currentDay !== day));
+		} catch {
+			setError('La progression n’a pas été enregistrée. Réessaie.');
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	const nextMission = MISSIONS.find((mission) => !done.includes(mission.day));
+	const totalProspects = Object.values(prospectCounts).reduce((total, count) => total + count, 0);
+
+	return (
+		<>
+			<div className="card">
+				<h2>Ta progression</h2>
+				<p>{loading ? 'Chargement…' : `${done.length} missions sur 28 · ${Math.round(done.length / 28 * 100)}%`}</p>
+				<progress max={28} value={done.length} aria-label="Progression du challenge" />
+				{error && (
+					<p role="alert">
+						{error}{' '}
+						<button className="btn btn2" onClick={() => { setLoading(true); setAttempt((value) => value + 1); }}>
+							Recharger
+						</button>
+					</p>
+				)}
+			</div>
+
+			<section className="dashboard-overview" aria-label="Résumé de ton activité">
+				<article className="card dashboard-next">
+					<p className="accent eyebrow">Prochaine action</p>
+					{loading ? <p>Chargement de ta prochaine mission…</p> : nextMission ? (
+						<>
+							<h2>Jour {nextMission.day} · {nextMission.title}</h2>
+							<p>{nextMission.instruction}</p>
+							<a className="btn btn2" href={`#mission-${nextMission.day}`}>Continuer la mission</a>
+						</>
+					) : (
+						<>
+							<h2>Challenge terminé</h2>
+							<p>Tu as validé les 28 missions. Retrouve tes livrables et prépare la suite.</p>
+							<Link className="btn btn2" href="/ressources">Voir les ressources</Link>
+						</>
+					)}
+				</article>
+
+				<article className="card dashboard-chart">
+					<div className="dashboard-card-heading">
+						<div>
+							<p className="accent eyebrow">Challenge · 28 jours</p>
+							<h2>Avancement par semaine</h2>
+						</div>
+						<span className="muted">{loading ? '…' : `${done.length}/28`}</span>
+					</div>
+					<div className="dashboard-bars" aria-label="Missions terminées par semaine">
+						{[1, 2, 3, 4].map((week) => {
+							const completed = done.filter((day) => day > (week - 1) * 7 && day <= week * 7).length;
+							return (
+								<div className="dashboard-bar-row" key={week}>
+									<span>S{week}</span>
+									<progress max={7} value={loading ? 0 : completed} aria-label={`Semaine ${week} : ${completed} missions sur 7 terminées`} />
+									<span>{loading ? '–' : `${completed}/7`}</span>
+								</div>
+							);
+						})}
+					</div>
+				</article>
+
+				<article className="card dashboard-pipeline">
+					<div className="dashboard-card-heading">
+						<div>
+							<p className="accent eyebrow">Prospection</p>
+							<h2>Mon pipeline</h2>
+						</div>
+						<Link href="/crm" aria-label="Ouvrir le CRM">Ouvrir le CRM</Link>
+					</div>
+					{insightError ? <p role="status">{insightError}</p> : loading ? <p>Chargement du pipeline…</p> : totalProspects === 0 ? (
+						<p>Pas encore de prospects. Ajoute ton premier contact dans le CRM.</p>
+					) : (
+						<div className="dashboard-pipeline-rows">
+							{PIPELINE_STATUSES.map((status) => (
+								<div className="dashboard-pipeline-row" key={status}>
+									<span>{status}</span>
+									<strong>{prospectCounts[status]}</strong>
+									<progress max={totalProspects} value={prospectCounts[status]} aria-label={`${status} : ${prospectCounts[status]} prospects`} />
+								</div>
+							))}
+						</div>
+					)}
+				</article>
+			</section>
+
+			{[1, 2, 3, 4].map((week) => (
+				<section className="section" key={week}>
+					<h2>Semaine {week}</h2>
+					{MISSIONS.slice((week - 1) * 7, week * 7).map((mission) => (
+						<details className="mission card" id={`mission-${mission.day}`} key={mission.day} open={!loading && nextMission?.day === mission.day}>
+							<summary>Jour {mission.day} — {mission.title}{done.includes(mission.day) ? ' ✓' : ''}</summary>
+							<p>{mission.instruction}</p>
+							<p><strong>Livrable :</strong> {mission.deliverable}</p>
+							<button
+								className="btn btn2"
+								disabled={loading || busy || !userId}
+								aria-pressed={done.includes(mission.day)}
+								onClick={() => toggle(mission.day)}
+							>
+								{done.includes(mission.day) ? 'Marquer à faire' : 'Marquer comme terminé'}
+							</button>
+						</details>
+					))}
+				</section>
+			))}
+		</>
+	);
 }

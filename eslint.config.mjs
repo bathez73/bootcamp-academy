@@ -5,7 +5,7 @@ import nextTs from 'eslint-config-next/typescript';
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'node_modules/**', 'out/**', 'build/**', 'next-env.d.ts']),
+  globalIgnores(['.next/**', '**/node_modules/**', 'supabase/.temp/**', 'out/**', 'build/**', 'next-env.d.ts']),
   {
     rules: {
       // Apostrophes françaises dans les textes JSX : règle inadaptée ici.

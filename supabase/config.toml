@@ -1,0 +1,16 @@
+# Configuration distante limitée aux redirections de Novenetech Campus.
+# Origine publique et redirections locales pour les essais.
+project_id = "novenetech-campus"
+
+[auth]
+site_url = "https://bootcamp-academy.lvh.bj"
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback?next=/inscription",
+  "http://localhost:3000/auth/callback?next=/auth/reset-password",
+  "https://bootcamp-academy.lvh.bj/auth/callback?next=/inscription",
+  "https://bootcamp-academy.lvh.bj/auth/callback?next=/auth/reset-password"
+]
+
+# Le modèle supabase/templates/recovery.html est prêt, mais son application
+# nécessite un SMTP personnalisé sur le projet gratuit. Ne pas l'activer
+# dans cette configuration avant la connexion de Brevo SMTP.

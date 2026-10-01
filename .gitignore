@@ -9,6 +9,8 @@
 build/
 *.tsbuildinfo
 next-env.d.ts
+/supabase/.temp/
+/.netlify/
 
 # ---- Variables d'environnement & secrets - JAMAIS commiter ----
 .env

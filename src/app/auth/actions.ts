@@ -1,5 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
+import { safeRedirect } from '@/lib/redirect';
 import { getServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured, SITE_URL } from '@/lib/supabase/config';
 
@@ -9,7 +10,7 @@ export async function signupAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get('email') || '');
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   const password = String(formData.get('password') || '');
   const fullName = String(formData.get('full_name') || '').trim();
 
@@ -21,8 +22,7 @@ export async function signupAction(
   }
 
   if (!isSupabaseConfigured) {
-    // Mode démo : pas de base d'utilisateurs, on dirige vers la connexion locale.
-    redirect('/login');
+    return { error: 'Le service de connexion est temporairement indisponible.' };
   }
 
   const supabase = await getServerClient();
@@ -35,27 +35,27 @@ export async function signupAction(
     password,
     options: {
       data: fullName ? { full_name: fullName } : undefined,
-      emailRedirectTo: `${SITE_URL}/login`,
+      emailRedirectTo: `${SITE_URL}/auth/callback?next=/inscription`,
     },
   });
   if (error) {
     return { error: error.message };
   }
 
-  redirect('/login');
+  return { error: null, success: true };
 }
 
 export async function resetPasswordAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get('email') || '');
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   if (!EMAIL_RE.test(email)) {
     return { error: "Merci d'indiquer un email valide." };
   }
 
   if (!isSupabaseConfigured) {
-    return { success: true, error: null };
+    return { error: 'Le service de connexion est temporairement indisponible.' };
   }
 
   const supabase = await getServerClient();
@@ -64,7 +64,7 @@ export async function resetPasswordAction(
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${SITE_URL}/auth/reset-password`,
+    redirectTo: `${SITE_URL}/auth/callback?next=/auth/reset-password`,
   });
   if (error) {
     return { error: error.message };
@@ -83,7 +83,7 @@ export async function updatePasswordAction(
   }
 
   if (!isSupabaseConfigured) {
-    redirect('/login');
+    return { error: 'Le service de connexion est temporairement indisponible.' };
   }
 
   const supabase = await getServerClient();
@@ -93,10 +93,16 @@ export async function updatePasswordAction(
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
-    return { error: error.message };
+    if (error.code === 'same_password') {
+      return { error: 'Choisis un mot de passe différent de ton mot de passe actuel.' };
+    }
+    if (['session_not_found', 'refresh_token_not_found', 'refresh_token_already_used', 'bad_jwt', 'reauthentication_needed'].includes(error.code || '') || error.name === 'AuthSessionMissingError') {
+      return { error: 'Ta session a expiré. Demande un nouveau lien et ouvre-le dans le même navigateur.' };
+    }
+    return { error: 'Le mot de passe n’a pas été modifié. Réessaie avec un nouveau lien de réinitialisation.' };
   }
 
-  redirect('/login');
+  return { error: null, success: true };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -105,11 +111,11 @@ export async function loginAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get('email') || '');
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   const password = String(formData.get('password') || '');
   // Anti open-redirect : on n'accepte qu'un chemin interne, jamais d'URL absolue.
   const rawRedirect = String(formData.get('redirect') || '');
-  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.includes('://') ? rawRedirect : '/dashboard';
+  const redirectTo = safeRedirect(rawRedirect);
 
   if (!EMAIL_RE.test(email)) {
     return { error: "Merci d'indiquer un email valide." };
@@ -119,8 +125,7 @@ export async function loginAction(
   }
 
   if (!isSupabaseConfigured) {
-    // Mode démo : Supabase non configuré, on accepte la connexion locale.
-    redirect(redirectTo);
+    return { error: 'Le service de connexion est temporairement indisponible.' };
   }
 
   const supabase = await getServerClient();

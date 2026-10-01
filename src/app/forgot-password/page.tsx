@@ -1,10 +1,12 @@
 'use client';
 import Brand from '@/components/Brand';
-import { useActionState } from 'react';
+import { Suspense, useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { resetPasswordAction, type AuthState } from '@/app/auth/actions';
 import ThemeToggle from '@/components/ThemeToggle';
 
-export default function ForgotPassword() {
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
   const [state, formAction, pending] = useActionState<AuthState, FormData>(resetPasswordAction, { error: null });
 
   return (
@@ -14,6 +16,9 @@ export default function ForgotPassword() {
         <Brand />
         <div className="card">
           <h1>Mot de passe oublié</h1>
+          {searchParams.has('linkError') && !state.success && (
+            <p role="alert">Ce lien a expiré ou a déjà été utilisé. Demande un nouveau lien ci-dessous, puis ouvre uniquement le dernier email reçu.</p>
+          )}
           {state.success ? (
             <p style={{ fontWeight: 600 }}>
               Si cet email existe, un lien de réinitialisation vient d&apos;être envoyé. Vérifie ta boîte de réception.
@@ -40,4 +45,8 @@ export default function ForgotPassword() {
       </section>
     </div>
   );
+}
+
+export default function ForgotPassword() {
+  return <Suspense fallback={null}><ForgotPasswordForm /></Suspense>;
 }

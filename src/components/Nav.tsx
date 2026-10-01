@@ -7,7 +7,7 @@ export default function Nav(){
     <div className="nav-links">
       <Link href="/programme">Programme</Link>
       <Link href="/academy">Academy</Link>
-      <Link href="/login">Espace étudiant</Link>
+      <Link href="/login?redirect=/dashboard">Espace étudiant</Link>
       <ThemeToggle />
     </div>
   </nav>;

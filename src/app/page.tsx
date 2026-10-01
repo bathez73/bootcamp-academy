@@ -24,7 +24,7 @@ export default function Home() {
               <h1>Transforme une compétence digitale en <span className="accent">source de revenus.</span></h1>
               <p>Un programme pratique pour étudiants : choisis un service, construis ton portfolio, prospecte de vraies entreprises et apprends à vendre ta première prestation.</p>
               <div className="home-actions">
-                <Link className="btn" href="/login">Rejoindre la cohorte — 25 000 FCFA →</Link>
+                <Link className="btn" href="/inscription">Rejoindre la cohorte — 25 000 FCFA →</Link>
                 <Link className="btn btn2" href="/programme">Voir le programme</Link>
               </div>
             </div>
@@ -63,25 +63,17 @@ export default function Home() {
               </div>
               <div className="card home-emphasis">
                 <h3>Une méthode orientée résultats</h3>
-                <p>Pas de promesse magique : chaque semaine produit un livrable concret. Jour 7 ton offre, semaine 2 ton portfolio, semaine 3 dix prospects contactés, semaine 4 tes relances et ton premier client.</p>
+                <p>Pas de promesse magique : chaque semaine produit un livrable concret. Jour 7 ton offre, semaine 2 ton portfolio, semaine 3 tes premières prises de contact, semaine 4 tes relances et tes propositions commerciales.</p>
                 <p>Le résultat dépend de ton effort, mais tu repars toujours avec des actifs qui restent les tiens : portfolio, scripts de vente et CRM rempli de vrais contacts.</p>
                 <strong className="accent">Même sans première vente, tu ne repars pas les mains vides.</strong>
               </div>
             </div>
           </section>
           <section className="section">
-            <h2>Ils l’ont fait. Toi aussi.</h2>
-            <div className="grid">
-              <figure className="card home-testimonial"><blockquote>“En 3 semaines, j’avais mes premières mises en relation. Je n’aurais jamais osé prospecter avant.”</blockquote><figcaption className="muted">Étudiante en génie logiciel — Bénin</figcaption></figure>
-              <figure className="card home-testimonial"><blockquote>“Le cadre des 28 jours m’a poussé à finir mon portfolio. Premier acompte reçu en semaine 4.”</blockquote><figcaption className="muted">Étudiant en marketing digital — Côte d’Ivoire</figcaption></figure>
-              <figure className="card home-testimonial"><blockquote>“Les scripts de prospection m’ont fait gagner des semaines. Je sais maintenant quoi dire à une entreprise.”</blockquote><figcaption className="muted">Étudiante en design — Togo</figcaption></figure>
-            </div>
-          </section>
-          <section className="section">
             <div className="card home-emphasis home-coaching">
               <h2>Encadré, pas abandonné</h2>
               <p>Le challenge est structuré par l’équipe Novenetech : missions guidées, feedback sur ton offre, communauté WhatsApp active et coaching sur les relances. Tu ne viens jamais dans le vide : chaque exercice est prévu pour produire un résultat concret au fil des semaines.</p>
-              <p>À la fin : ton mini-portfolio, ton CRM rempli de vrais prospects et ton premier client décroché.</p>
+              <p>À la fin : ton mini-portfolio, ton CRM rempli de vrais prospects et une démarche concrète pour trouver ton premier client.</p>
             </div>
           </section>
           <section className="section">
@@ -97,7 +89,7 @@ export default function Home() {
               <h2>Ta place dans la cohorte t’attend.</h2>
               <p>Réserve maintenant — place validée après paiement.</p>
               <div className="home-actions">
-                <Link className="btn" href="/login">Rejoindre la cohorte — 25 000 FCFA →</Link>
+                <Link className="btn" href="/inscription">Rejoindre la cohorte — 25 000 FCFA →</Link>
                 <a className="btn btn2" href={whatsapp} target="_blank" rel="noopener noreferrer">Pose ta question sur WhatsApp</a>
               </div>
             </div>
@@ -108,7 +100,7 @@ export default function Home() {
         <div className="wrap">
           <Brand />
           <nav className="home-footer-links" aria-label="Navigation de pied de page">
-            <Link href="/programme">Programme</Link><Link href="/login">Rejoindre la cohorte</Link><Link href="/login">Espace étudiant</Link><a href={whatsapp} target="_blank" rel="noopener noreferrer">22952527913</a>
+            <Link href="/programme">Programme</Link><Link href="/inscription">Rejoindre la cohorte</Link><Link href="/dashboard">Espace étudiant</Link><a href={whatsapp} target="_blank" rel="noopener noreferrer">22952527913</a>
           </nav>
           <small className="muted">© 2026 Novenetech — Challenge 28 jours • 25 000 FCFA • encadrement 4 semaines</small>
         </div>

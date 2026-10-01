@@ -1,0 +1,10 @@
+[build]
+command = "npm run build"
+publish = ".next"
+
+[build.environment]
+NODE_VERSION = "24"
+
+# Netlify détecte Next.js et applique son adaptateur pour les routes serveur.
+# Les variables secrètes et SITE_URL doivent être définies dans Netlify,
+# avec les portées Builds et Functions, et jamais dans ce fichier.

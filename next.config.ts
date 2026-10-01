@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 // En dev, on tolère eval/source-maps et les websockets. En prod, CSP stricte.
 const contentSecurityPolicy = isDev
-  ? "default-src 'self' 'unsafe-inline' data: blob: https://*.supabase.co https://*.kkiapay.me ws: wss: http://localhost:*"
+  ? "default-src 'self' 'unsafe-inline' data: blob: https://*.supabase.co https://*.kkiapay.me ws: wss: http://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.kkiapay.me"
   : "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' https://cdn.kkiapay.me; " +
     "style-src 'self' 'unsafe-inline'; " +
@@ -23,6 +23,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: { '/pdf/[file]': ['./private/pdf/*.pdf'], '/api/kkiapay-webhook': ['./private/pdf/*.pdf'] },
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {

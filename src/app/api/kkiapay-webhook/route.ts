@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validPayment } from '@/lib/payment-validation';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { FORMATIONS_MAP } from '@/lib/formations';
@@ -15,8 +16,6 @@ import { getServiceRoleClient } from '@/lib/supabase/server';
 //   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY
 //                           -> pour l'idempotence durable (table payments)
 
-// Anti-rejeu rapide en mémoire (fallback si Supabase non configuré).
-const processedInMemory = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,19 +30,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({error:"Requête invalide"},{status:400});
 
     // 2. Ignorer les transactions échouées
-    if (!body.isPaymentSucces) {
+    if (body.isPaymentSucces !== true) {
       return NextResponse.json({ message: 'Transaction non réussie, ignorée.' });
     }
 
-    // 3. Idempotence rapide en mémoire
-    if (body.transactionId && processedInMemory.has(body.transactionId)) {
-      return NextResponse.json({ message: 'Déjà traité' });
-    }
 
     // 4. Récupérer nos métadonnées (formation + email) transmises via "data"
-    let meta: { formation?: string; email?: string } = {};
+    let meta: { formation?: string; email?: string; userId?: string } = {};
     const raw = typeof body.stateData === 'string' ? body.stateData : body.stateData || body.data;
     try {
       meta = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
@@ -51,51 +47,38 @@ export async function POST(req: NextRequest) {
       meta = {};
     }
 
+    if (!meta || typeof meta !== "object" || Array.isArray(meta)) return NextResponse.json({error:"Métadonnées invalides"},{status:400});
     const formationName = meta.formation;
-    const clientEmail = meta.email;
-    const formation = formationName ? FORMATIONS_MAP[formationName] : undefined;
+    const clientEmail = typeof meta.email === 'string' ? meta.email.trim().toLowerCase() : '';
+    if (typeof meta.userId !== 'string') return NextResponse.json({ error: 'Compte acheteur manquant' }, { status: 400 });
+    const formation = typeof formationName === 'string' && Object.hasOwn(FORMATIONS_MAP, formationName) ? FORMATIONS_MAP[formationName] : undefined;
 
     if (!formation || !clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
       console.error('Métadonnées invalides sur la transaction', body.transactionId, meta);
-      return NextResponse.json({ message: 'Métadonnées manquantes, envoi automatique impossible.' });
+      return NextResponse.json({ message: 'Métadonnées manquantes, envoi automatique impossible.' }, {status:400});
     }
 
     // 5. Vérification anti-fraude : le montant payé doit couvrir le prix réel
-    if (Number(body.amount) < formation.price) {
+    if (!validPayment(body.transactionId, body.amount, formation.price)) {
       console.error('Montant insuffisant pour', formationName, '-', body.amount, 'reçu,', formation.price, 'attendu');
-      return NextResponse.json({ message: 'Montant insuffisant, envoi bloqué.' });
+      return NextResponse.json({ message: 'Montant ou transaction invalide, envoi bloqué.' }, {status:400});
     }
 
-    // 6. Suivi durable du paiement (idempotence après redémarrage)
+    // Configuration vérifiée avant de prendre en charge une livraison.
+    if (!process.env.SITE_URL || !process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) return NextResponse.json({error:'Service indisponible'},{status:503});
     const serviceRole = await getServiceRoleClient();
-    if (serviceRole && body.transactionId) {
-      const { data: existing } = await serviceRole
-        .from('payments')
-        .select('id, status')
-        .eq('transaction_id', body.transactionId)
-        .maybeSingle();
-
-      if (existing && existing.status === 'succes') {
-        console.log('Paiement déjà traité (base)', body.transactionId);
-        return NextResponse.json({ message: 'Déjà traité' });
-      }
-
-      if (!existing) {
-        const { error: insErr } = await serviceRole.from('payments').insert({
-          transaction_id: body.transactionId,
-          formation: formationName,
-          email: clientEmail,
-          amount: Number(body.amount),
-          status: 'pending',
-        });
-        if (insErr) {
-          if (insErr.code !== '23505') {
-            console.error('Erreur enregistrement paiement:', insErr.message);
-          }
-          // 23505 : inséré entre-temps par un retry concurrent -> on continue (envoi).
-        }
-      }
-    }
+    if (!serviceRole) return NextResponse.json({error:'Service indisponible'},{status:503});
+    const {data: buyer, error: buyerError} = await serviceRole.auth.admin.getUserById(meta.userId);
+    if (buyerError || !buyer.user?.email_confirmed_at || buyer.user.email?.toLowerCase() !== clientEmail) return NextResponse.json({error:'Compte acheteur invalide'},{status:400});
+    const {error: insertError} = await serviceRole.from('payments').insert({transaction_id:body.transactionId,formation:formationName,email:clientEmail,user_id:buyer.user.id,amount:Number(body.amount),verified:true,status:'pending'});
+    if(insertError && insertError.code !== '23505') return NextResponse.json({error:'Enregistrement indisponible'},{status:503});
+    const {data: existing, error: readError}=await serviceRole.from('payments').select('status, user_id, formation').eq('transaction_id',body.transactionId).single();
+    if(readError) return NextResponse.json({error:'Lecture indisponible'},{status:503});
+    if(existing.user_id!==buyer.user.id || existing.formation!==formationName) return NextResponse.json({error:'Transaction incohérente'},{status:409});
+    if(existing.status==='succes') return NextResponse.json({message:'Déjà traité'});
+    // Une seule requête peut obtenir ce paiement. Un état processing ambigu nécessite une vérification manuelle.
+    const {data: claim,error: claimError}=await serviceRole.from('payments').update({status:'processing'}).eq('transaction_id',body.transactionId).in('status',['pending','email_echo']).select('id');
+    if(claimError || !claim?.length) return NextResponse.json({error:'Livraison en cours de vérification'},{status:503});
 
     // 7. Envoyer le PDF par email via Brevo (en pièce jointe, lien en secours)
     if (!process.env.SITE_URL || !process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
@@ -108,7 +91,7 @@ export async function POST(req: NextRequest) {
     // intercepté par le middleware d'auth et renverrait la page de connexion).
     let attachment: { name: string; content: string } | undefined;
     try {
-      const filePath = join(process.cwd(), 'public', 'pdf', formation.file);
+      const filePath = join(process.cwd(), 'private', 'pdf', formation.file);
       const buffer = await readFile(filePath);
       attachment = {
         name: formation.file,
@@ -150,10 +133,8 @@ export async function POST(req: NextRequest) {
 
     // 8. Marquer le paiement comme livré
     if (serviceRole && body.transactionId) {
-      await serviceRole.from('payments').update({ status: 'succes' }).eq('transaction_id', body.transactionId);
-    }
-    if (body.transactionId) {
-      processedInMemory.add(body.transactionId);
+      const { error } = await serviceRole.from('payments').update({ status: 'succes' }).eq('transaction_id', body.transactionId);
+      if(error) return NextResponse.json({error:'Confirmation de livraison indisponible'},{status:503});
     }
 
     return NextResponse.json({ message: 'PDF envoyé avec succès à ' + clientEmail });
