@@ -15,6 +15,8 @@ export default function TasksWidget() {
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState('');
+	const [lastAction, setLastAction] = useState<{ day: number; done: boolean } | null>(null);
+	const [pendingMission, setPendingMission] = useState<number | null>(null);
 	const [insightError, setInsightError] = useState('');
 	const [prospectCounts, setProspectCounts] = useState<Record<ProspectStatus, number>>({
 		'À contacter': 0,
@@ -23,6 +25,12 @@ export default function TasksWidget() {
 		Client: 0,
 	});
 	const [attempt, setAttempt] = useState(0);
+
+	useEffect(() => {
+		if (!lastAction) return;
+		const timeout = window.setTimeout(() => setLastAction(null), 2200);
+		return () => window.clearTimeout(timeout);
+	}, [lastAction]);
 
 	useEffect(() => {
 		let active = true;
@@ -90,8 +98,10 @@ export default function TasksWidget() {
 			);
 			if (saveError) throw saveError;
 			setDone((current) => next ? [...current, day] : current.filter((currentDay) => currentDay !== day));
+			setLastAction({ day, done: next });
 		} catch {
 			setError('La progression n’a pas été enregistrée. Réessaie.');
+			setLastAction({ day, done: !done.includes(day) });
 		} finally {
 			setBusy(false);
 		}
@@ -99,13 +109,54 @@ export default function TasksWidget() {
 
 	const nextMission = MISSIONS.find((mission) => !done.includes(mission.day));
 	const totalProspects = Object.values(prospectCounts).reduce((total, count) => total + count, 0);
+	const pendingMissionData = pendingMission ? MISSIONS.find((mission) => mission.day === pendingMission) ?? null : null;
+	const pendingMissionIsDone = pendingMissionData ? done.includes(pendingMissionData.day) : false;
+
+	async function confirmMissionToggle() {
+		if (pendingMissionData) {
+			await toggle(pendingMissionData.day);
+			setPendingMission(null);
+		}
+	}
 
 	return (
 		<>
+			{pendingMissionData && (
+				<div className="premium-modal-backdrop" onClick={() => setPendingMission(null)}>
+					<div className="premium-modal" role="dialog" aria-modal="true" aria-labelledby="mission-modal-title" onClick={(event) => event.stopPropagation()}>
+						<div className="premium-modal__header">
+							<div>
+								<p className="accent eyebrow">Confirmation</p>
+								<h3 id="mission-modal-title">{pendingMissionIsDone ? 'Remettre la mission à faire ?' : 'Valider cette mission ?'}</h3>
+							</div>
+							<button className="premium-modal__close" type="button" aria-label="Fermer la modale" onClick={() => setPendingMission(null)}>×</button>
+						</div>
+						<p>
+							{pendingMissionIsDone
+								? `Tu vas remettre le jour ${pendingMissionData.day} en attente.`
+								: `Tu vas valider le jour ${pendingMissionData.day} : ${pendingMissionData.title}.`}
+						</p>
+						<div className="premium-modal__actions">
+							<button className="premium-modal__button premium-modal__button--secondary" type="button" onClick={() => setPendingMission(null)}>
+								Annuler
+							</button>
+							<button className="premium-modal__button premium-modal__button--primary" type="button" onClick={confirmMissionToggle} disabled={busy || loading}>
+								{pendingMissionIsDone ? 'Remettre à faire' : 'Valider'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 			<div className="card">
 				<h2>Ta progression</h2>
 				<p>{loading ? 'Chargement…' : `${done.length} missions sur 28 · ${Math.round(done.length / 28 * 100)}%`}</p>
 				<progress max={28} value={done.length} aria-label="Progression du challenge" />
+				{lastAction && (
+					<div className="status-pill" role="status" aria-live="polite">
+						<span className="status-pill__dot" aria-hidden="true" />
+						{lastAction.done ? `Mission ${lastAction.day} validée.` : `Mission ${lastAction.day} remise à faire.`}
+					</div>
+				)}
 				{error && (
 					<p role="alert">
 						{error}{' '}
@@ -192,7 +243,7 @@ export default function TasksWidget() {
 								className="btn btn2"
 								disabled={loading || busy || !userId}
 								aria-pressed={done.includes(mission.day)}
-								onClick={() => toggle(mission.day)}
+								onClick={() => setPendingMission(mission.day)}
 							>
 								{done.includes(mission.day) ? 'Marquer à faire' : 'Marquer comme terminé'}
 							</button>
