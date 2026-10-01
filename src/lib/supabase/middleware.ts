@@ -34,5 +34,21 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin, cohort_access_approved')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!profileError && profile?.is_admin === true) return response;
+
+    if (['/academy', '/dashboard', '/crm', '/ressources', '/pdf'].some((path) => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(`${path}/`))) {
+      if (profileError || profile?.cohort_access_approved !== true) {
+        return NextResponse.redirect(new URL('/inscription?access=pending', request.url));
+      }
+    }
+  }
+
   return response;
 }

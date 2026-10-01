@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import StudentNav from '@/components/StudentNav';
 import Nav from '@/components/Nav';
 import { FORMATIONS } from '@/lib/formations';
+import Link from 'next/link';
 
 declare global {
   interface Window {
@@ -22,12 +23,16 @@ const KKIAPAY_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY || '';
 const SANDBOX_MODE = process.env.NEXT_PUBLIC_KKIAPAY_SANDBOX !== 'false';
 
-export default function AcademyCheckout({ email, userId, purchased, checkoutReady }: { email: string; userId: string; purchased: string[]; checkoutReady: boolean }) {
+export default function AcademyCheckout({ email, userId, purchased, checkoutReady, cohortApproved = false, remainingToUnlock = 25000 }: { email: string; userId: string; purchased: string[]; checkoutReady: boolean; cohortApproved?: boolean; remainingToUnlock?: number }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   function payer(montant: number, nomFormation: string) {
+    if (!cohortApproved) {
+      setMessage('Tu dois d’abord finaliser le paiement de la cohorte pour accéder à l’Academy.');
+      return;
+    }
     if (!checkoutReady || !KKIAPAY_PUBLIC_KEY) { setMessage('Le paiement est temporairement indisponible.'); return; }
     const emailValide = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!emailValide) {
@@ -87,6 +92,16 @@ export default function AcademyCheckout({ email, userId, purchased, checkoutRead
           />
         </div>
 
+        {!cohortApproved && (
+          <div className="card" style={{ maxWidth: 620, marginBottom: 24 }}>
+            <h3>Accès à l’Academy verrouillé</h3>
+            <p className="muted">
+              Tu dois d’abord payer le total de la cohorte pour autoriser l’accès aux cours. Il reste {remainingToUnlock.toLocaleString('fr-FR')} FCFA à régler.
+            </p>
+            <Link className="btn" href="/inscription">Finaliser mon paiement</Link>
+          </div>
+        )}
+
         {userId && <p><button className="btn btn2" onClick={() => router.refresh()}>Actualiser mes achats</button></p>}
         <div className="grid">
           {FORMATIONS.map((f) => (
@@ -99,7 +114,7 @@ export default function AcademyCheckout({ email, userId, purchased, checkoutRead
               <button
                 type="button"
                 className="btn"
-                disabled={!ready || !KKIAPAY_PUBLIC_KEY || !userId || !checkoutReady || purchased.includes(f.nom)}
+                disabled={!ready || !KKIAPAY_PUBLIC_KEY || !userId || !checkoutReady || !cohortApproved || purchased.includes(f.nom)}
                 onClick={() => payer(f.prix, f.nom)}
               >
                 {purchased.includes(f.nom) ? "Formation achetée" : "Payer maintenant"}
