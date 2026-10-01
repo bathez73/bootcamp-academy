@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCohortPaymentState } from '../src/lib/cohort-access.ts';
 
-test('cohort payment state grants access only after 25 000 FCFA', () => {
+test('cohort access requires full settlement and manual approval', () => {
   const notPaid = getCohortPaymentState([]);
   assert.equal(notPaid.hasAccess, false);
   assert.equal(notPaid.remaining, 25000);
