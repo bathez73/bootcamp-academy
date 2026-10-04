@@ -1,4 +1,5 @@
 ﻿import './globals.css';
+import './masterclass.css';
 import type { Metadata } from 'next';
 import { Sora, Inter } from 'next/font/google';
 import { THEME_SWITCH_SCRIPT } from '@/lib/theme';

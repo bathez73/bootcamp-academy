@@ -5,6 +5,7 @@ export default function Nav(){
   return <nav className="nav">
     <Brand />
     <div className="nav-links">
+      <Link href="/masterclass">Masterclass gratuite</Link>
       <Link href="/programme">Programme</Link>
       <Link href="/academy">Academy</Link>
       <Link href="/login?redirect=/dashboard">Espace étudiant</Link>

@@ -10,36 +10,36 @@ function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(resetPasswordAction, { error: null });
 
   return (
-    <div className="wrap" style={{ maxWidth: 520 }}>
+    <div className="wrap auth-shell">
       <div className="page-tools"><ThemeToggle /></div>
-      <section className="section" style={{ paddingTop: 30 }}>
+      <section className="section auth-section">
         <Brand />
-        <div className="card">
+        <div className="card auth-panel">
           <h1>Mot de passe oublié</h1>
           {searchParams.has('linkError') && !state.success && (
-            <p role="alert">Ce lien a expiré ou a déjà été utilisé. Demande un nouveau lien ci-dessous, puis ouvre uniquement le dernier email reçu.</p>
+            <p className="auth-banner auth-banner--error" role="alert">Ce lien a expiré ou a déjà été utilisé. Demande un nouveau lien ci-dessous, puis ouvre uniquement le dernier email reçu.</p>
           )}
           {state.success ? (
-            <p style={{ fontWeight: 600 }}>
+            <p className="auth-banner auth-banner--success" role="status">
               Si cet email existe, un lien de réinitialisation vient d&apos;être envoyé. Vérifie ta boîte de réception.
             </p>
           ) : (
             <>
               <p className="muted">Indique ton email, on t&apos;envoie un lien pour choisir un nouveau mot de passe.</p>
-              <form action={formAction}>
+              <form action={formAction} className="auth-form">
                 <label htmlFor="reset-email">Email</label>
                 <input id="reset-email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.com" />
                 {state.error && (
-                  <p className="accent" role="alert" style={{ fontWeight: 600 }}>{state.error}</p>
+                  <p className="auth-banner auth-banner--error" role="alert">{state.error}</p>
                 )}
-                <button type="submit" className="btn" disabled={pending} style={{ opacity: pending ? 0.6 : 1 }}>
+                <button type="submit" className="btn" disabled={pending}>
                   {pending ? 'Envoi…' : 'Envoyer le lien'}
                 </button>
               </form>
             </>
           )}
-          <div className="authLinks" style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <a href="/login" className="muted" style={{ fontSize: 14 }}>Retour à la connexion</a>
+          <div className="auth-links">
+            <a href="/login" className="muted">Retour à la connexion</a>
           </div>
         </div>
       </section>

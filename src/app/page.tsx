@@ -23,15 +23,34 @@ export default function Home() {
               <p className="accent eyebrow"><b>Offre fondateurs — Challenge 28 jours</b></p>
               <h1>Transforme une compétence digitale en <span className="accent">source de revenus.</span></h1>
               <p>Un programme pratique pour étudiants : choisis un service, construis ton portfolio, prospecte de vraies entreprises et apprends à vendre ta première prestation.</p>
+              <div className="home-badges" aria-label="Résultats attendus">
+                <span>Portfolio prêt</span>
+                <span>CRM structuré</span>
+                <span>Première vente</span>
+              </div>
               <div className="home-actions">
                 <Link className="btn" href="/inscription">Rejoindre la cohorte — 25 000 FCFA →</Link>
                 <Link className="btn btn2" href="/programme">Voir le programme</Link>
               </div>
             </div>
-            <div className="card">
+            <div className="card home-hero-card">
               <p className="muted eyebrow">Cohorte fondateurs — places limitées</p>
               <div className="price accent">25 000 <small>FCFA</small></div>
               <p>4 semaines • exercices • templates • communauté • projet final</p>
+              <div className="home-metrics">
+                <div>
+                  <strong>28</strong>
+                  <span>jours</span>
+                </div>
+                <div>
+                  <strong>4</strong>
+                  <span>semaines</span>
+                </div>
+                <div>
+                  <strong>1</strong>
+                  <span>premier client</span>
+                </div>
+              </div>
               <hr />
               <p>✓ Offre monétisable</p><p>✓ Mini-portfolio</p><p>✓ Scripts de prospection</p><p>✓ CRM personnel</p><p>✓ Challenge premier client</p>
               <small className="muted">Encadrement réel pendant 4 semaines</small>

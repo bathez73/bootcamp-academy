@@ -1,5 +1,7 @@
 [build]
-command = "npm run build"
+# Webpack évite les chemins de chunks Turbopack incompatibles avec le
+# paquet de fonctions Edge créé par l'adaptateur Netlify sous Windows.
+command = "npm run build -- --webpack"
 publish = ".next"
 
 [build.environment]

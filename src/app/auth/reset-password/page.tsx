@@ -24,14 +24,14 @@ export default function ResetPassword() {
   }, []);
 
   return (
-    <div className="wrap" style={{ maxWidth: 520 }}>
+    <div className="wrap auth-shell">
       <div className="page-tools"><ThemeToggle /></div>
-      <section className="section" style={{ paddingTop: 30 }}>
+      <section className="section auth-section">
         <Brand />
-        <div className="card">
+        <div className="card auth-panel">
           <h1>Nouveau mot de passe</h1>
           {state.success ? (
-            <div role="status">
+            <div className="auth-banner auth-banner--success" role="status">
               <p>Ton nouveau mot de passe est enregistré.</p>
               <a className="text-link" href="/login">Se connecter avec le nouveau mot de passe</a>
             </div>
@@ -40,26 +40,26 @@ export default function ResetPassword() {
           ) : valid ? (
             <>
               <p className="muted">Choisis un nouveau mot de passe d&apos;au moins 6 caractères.</p>
-              <form action={formAction}>
+              <form action={formAction} className="auth-form">
                 <label htmlFor="new-password">Mot de passe</label>
                 <input id="new-password" name="password" type="password" required minLength={6} autoComplete="new-password" placeholder="••••••••" />
                 {state.error && (
-                  <div>
-                    <p className="accent" role="alert" style={{ fontWeight: 600 }}>{state.error}</p>
+                  <div className="auth-inline-error">
+                    <p className="auth-banner auth-banner--error" role="alert">{state.error}</p>
                     <a className="text-link" href="/forgot-password">Demander un nouveau lien</a>
                   </div>
                 )}
-                <button type="submit" className="btn" disabled={pending} style={{ opacity: pending ? 0.6 : 1 }}>
+                <button type="submit" className="btn" disabled={pending}>
                   {pending ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
                 </button>
               </form>
             </>
           ) : (
             <>
-              <p style={{ fontWeight: 600 }}>Ce lien est invalide ou expiré.</p>
-              <div className="authLinks" style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <a href="/forgot-password" className="muted" style={{ fontSize: 14 }}>Demander un nouveau lien</a>
-                <a href="/login" className="muted" style={{ fontSize: 14 }}>Se connecter</a>
+              <p className="auth-banner auth-banner--error" role="alert">Ce lien est invalide ou expiré.</p>
+              <div className="auth-links">
+                <a href="/forgot-password" className="muted">Demander un nouveau lien</a>
+                <a href="/login" className="muted">Se connecter</a>
               </div>
             </>
           )}

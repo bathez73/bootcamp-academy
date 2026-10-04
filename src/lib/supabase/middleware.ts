@@ -22,10 +22,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // A temporary Supabase/network failure is not proof that the user signed out.
-  if (error) return response;
+  // Une session absente ou invérifiable ne donne jamais accès aux pages privées.
+  // La redirection conserve les cookies pour permettre une nouvelle tentative.
 
   if (!user && request.nextUrl.pathname !== '/academy') {
     const url = request.nextUrl.clone();
