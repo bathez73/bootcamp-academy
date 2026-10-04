@@ -352,10 +352,36 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           </div>
         </section>
 
+        <section className="masterclass-section masterclass-proof-section">
+          <div className="masterclass-shell">
+            <div className="masterclass-section-heading masterclass-proof-heading">
+              <p className="masterclass-section-label">Ils ont déjà franchi le cap</p>
+              <h2>Avant de choisir une piste, certains ont déjà commencé.</h2>
+            </div>
+            <div className="masterclass-proof-grid">
+              <article className="masterclass-proof-card">
+                <span className="masterclass-proof-avatar" aria-hidden="true">B</span>
+                <h3>Béatrice</h3>
+                <p>Accompagnée pour clarifier sa valeur et passer de l’idée au premier service rentable.</p>
+              </article>
+              <article className="masterclass-proof-card">
+                <span className="masterclass-proof-avatar" aria-hidden="true">P</span>
+                <h3>Pacome</h3>
+                <p>Suivi pour identifier une porte d’entrée digitale claire et structurer son offre.</p>
+              </article>
+              <article className="masterclass-proof-card">
+                <span className="masterclass-proof-avatar" aria-hidden="true">Y</span>
+                <h3>Yann</h3>
+                <p>Accompagné pour transformer un savoir-faire en proposition concrète et utile.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section className="masterclass-bonus-band">
           <div className="masterclass-shell masterclass-bonus-content">
-            <span className="masterclass-bonus-index">À la fin du direct</span>
-            <p>Un cadeau sera réservé aux personnes présentes.<br /><strong>On garde la surprise pour le live.</strong></p>
+            <span className="masterclass-bonus-index">Indice cadeau</span>
+            <p>Le cadeau vaut 25 000 FCFA.<br /><strong>Il s’agit d’une formation pour aller plus vite, plus claire, plus utile.</strong></p>
             <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
