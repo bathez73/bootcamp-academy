@@ -4,7 +4,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '@/components/Brand';
-import { getPriorityPlacesRemaining, MASTERCLASS_PRIORITY_CAPACITY } from '@/lib/masterclass-registration';
+import {
+  buildTrackedHref,
+  getEventUtcTimestamp,
+  getPriorityPlacesRemaining,
+  getUTMParameters,
+} from '@/lib/masterclass-registration';
 
 type RegistrationResult = {
   ok?: boolean;
@@ -17,50 +22,65 @@ type MasterclassLandingProps = {
   initialRegistrationCount: number | null;
 };
 
-const EVENT_AT = new Date('2026-10-24T20:00:00+01:00').getTime();
-const WHATSAPP_NUMBER = '22952527913';
+const EVENT_AT = getEventUtcTimestamp();
+const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/FMoQAjUu9nk6z5X40nadbq';
 const FAQ_ITEMS = [
   ['La masterclass est-elle vraiment gratuite ?', 'Oui. La réservation et la participation à cette session en ligne sont gratuites.'],
-  ['À quelle heure dois-je me connecter ?', 'La salle ouvrira à 19 h 45. Le direct commencera à 20 h, heure du Bénin, le samedi 24 octobre 2026.'],
-  ['Comment vais-je recevoir le lien d’accès ?', 'Après ta réservation, ouvre le message WhatsApp prérempli et envoie-le à Novenetech. Les informations pratiques seront ensuite communiquées aux inscrits.'],
-  ['Faut-il déjà avoir une compétence digitale ?', 'Non. La session t’aidera à repérer une porte d’entrée et à relier une compétence à un problème client concret.'],
-  ['Est-ce que la masterclass garantit un premier client ou un revenu ?', 'Non. Elle présente une méthode et des pistes de mise en pratique ; les résultats dépendent du marché, du travail et des démarches de chacun.'],
+  ['À quelle heure dois-je me connecter ?', 'Le LIVE débute à 19 h GMT / 20 h GMT+1, le samedi 24 octobre 2026.'],
+  ['Comment vais-je recevoir le lien d’accès ?', 'Les informations pratiques et le lien du LIVE seront partagés dans le groupe WhatsApp officiel de la masterclass.'],
+  ['Faut-il déjà avoir une compétence digitale ?', 'Non. La session est conçue pour t’aider à aller du savoir-faire à une offre claire, même en commençant avec peu de structure.'],
+  ['Est-ce que la masterclass garantit un premier client ou un revenu ?', 'Non. Elle donne une méthode et des outils concrets pour tester une offre, mais les résultats dépendent de ton action, de ton marché et de tes démarches.'],
 ];
 
-type LandingConversionEvent = 'landing_view' | 'hero_cta_click' | 'sticky_cta_click' | 'program_cta_click' | 'form_view' | 'form_start' | 'form_submit' | 'registration_success';
+type LandingConversionEvent = 'landing_view' | 'cta_click' | 'form_view' | 'form_start' | 'form_submit' | 'registration_complete' | 'whatsapp_click';
 
-function trackConversion(event: LandingConversionEvent) {
+function trackConversion(event: LandingConversionEvent, extra: Record<string, string> = {}) {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent('masterclass:conversion', { detail: { event } }));
-  const analyticsWindow = window as Window & { dataLayer?: Array<Record<string, string>> };
-  analyticsWindow.dataLayer?.push({ event });
+
+  const analyticsWindow = window as Window & {
+    dataLayer?: Array<Record<string, string | Record<string, string>>>;
+    fbq?: (...args: unknown[]) => void;
+  };
+
+  const utmData = getUTMParameters(window.location.href);
+  const payload = { event, ...utmData, ...extra };
+  window.dispatchEvent(new CustomEvent('masterclass:conversion', { detail: payload }));
+  analyticsWindow.dataLayer?.push(payload);
+}
+
+function trackMetaLead() {
+  if (typeof window === 'undefined') return;
+  const analyticsWindow = window as Window & { fbq?: (...args: unknown[]) => void };
+  if (typeof analyticsWindow.fbq === 'function') {
+    analyticsWindow.fbq('track', 'Lead');
+  }
 }
 
 const agenda = [
   {
     number: '01',
-    title: 'Une compétence ne suffit pas encore',
-    description: 'Comprendre pourquoi un outil ou un savoir-faire doit répondre à un vrai problème pour devenir une offre.',
+    title: 'Compétence → problème',
+    description: 'Identifier ce que tu sais faire, le besoin réel qu’il peut résoudre et la valeur qu’une offre peut créer.',
   },
   {
     number: '02',
-    title: 'Choisir une porte d’entrée',
-    description: 'Design, IA et rédaction, réseaux sociaux, WhatsApp Business ou web : repérer une piste et commencer par une seule.',
+    title: 'Problème → cible',
+    description: 'Définir la personne ou l’entreprise qui a besoin de cette solution et pourquoi elle a besoin de toi.',
   },
   {
     number: '03',
-    title: 'Formuler une offre claire',
-    description: 'Compléter une phrase simple : « J’aide [client] à [résultat] grâce à [service]. »',
+    title: 'Offre → message',
+    description: 'Transformer une compétence en une offre simple et préparer le premier message de prospection adapté.',
   },
   {
     number: '04',
-    title: 'Voir la méthode en direct',
-    description: 'Appliquer le framework à un cas concret, de l’observation du besoin jusqu’au premier message.',
+    title: 'Prospect → premier contact',
+    description: 'Poser une première conversation claire, utile et crédible sans pression ni promesse irréaliste.',
   },
   {
     number: '05',
-    title: 'Commencer sa prospection',
-    description: 'Découvrir le portfolio démonstratif, le premier message et le Challenge 20 pour organiser ses tests.',
+    title: 'Client → test de traction',
+    description: 'Valider une piste commerciale, apprendre rapidement et ajuster ton offre selon le retour réel.',
   },
 ];
 
@@ -73,9 +93,15 @@ function formatCountdown(milliseconds: number) {
   return { days, hours, minutes, seconds };
 }
 
-function getWhatsAppLink(name: string) {
-  const message = `Bonjour Novenetech, je viens de réserver ma place pour la masterclass « De 0 à ton premier client digital ». Mon nom : ${name}. Merci de m’envoyer les informations pratiques pour le 24 octobre.`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+function getLocalEventSummary() {
+  const eventDate = new Date(EVENT_AT);
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    hour12: false,
+  });
+  return formatter.format(eventDate);
 }
 
 function openWhatsAppLink(url: string) {
@@ -99,9 +125,34 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
   const [otherDialCodeSelected, setOtherDialCodeSelected] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [stickyCtaVisible, setStickyCtaVisible] = useState(false);
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({});
+  const [localEventDate, setLocalEventDate] = useState('');
   const heroCtaRef = useRef<HTMLAnchorElement>(null);
   const formSectionRef = useRef<HTMLElement>(null);
   const formStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    setLocalEventDate(getLocalEventSummary());
+
+    const nextUtm = getUTMParameters(window.location.href);
+    const stored = window.sessionStorage.getItem('masterclass_utm');
+    let merged = nextUtm;
+    if (!Object.keys(nextUtm).length && stored) {
+      try {
+        merged = JSON.parse(stored) as Record<string, string>;
+      } catch {
+        merged = {};
+      }
+    }
+
+    if (Object.keys(merged).length) {
+      window.sessionStorage.setItem('masterclass_utm', JSON.stringify(merged));
+    }
+
+    setUtmParams(merged);
+  }, []);
 
   useEffect(() => {
     trackConversion('landing_view');
@@ -126,8 +177,8 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.target === heroCta) {
-            if (entry.isIntersecting) heroCtaPassed = false;
-            else if (entry.boundingClientRect.top < 0) heroCtaPassed = true;
+          if (entry.isIntersecting) heroCtaPassed = false;
+          else if (entry.boundingClientRect.top < 0) heroCtaPassed = true;
         } else if (entry.target === formSection) {
           formVisible = entry.isIntersecting;
           if (entry.isIntersecting && !formViewTracked) {
@@ -157,6 +208,8 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
     };
   }, []);
 
+  const ctaLink = (hash: string) => buildTrackedHref(hash, utmParams);
+
   async function submitRegistration(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
@@ -170,12 +223,14 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
     const dialingCode = countryCode === 'other' ? otherDialCode : countryCode;
     let phoneDigits = String(form.get('whatsapp') || '').replace(/\D/g, '');
     if (dialingCode !== '+229' && phoneDigits.startsWith('0')) phoneDigits = phoneDigits.slice(1);
+
     const payload = {
       fullName,
       email: String(form.get('email') || ''),
       whatsapp: `${dialingCode}${phoneDigits}`,
       consent: form.get('consent') === 'on',
       website: String(form.get('website') || ''),
+      ...utmParams,
     };
 
     try {
@@ -190,13 +245,14 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
         return;
       }
 
-      const nextWhatsAppUrl = getWhatsAppLink(fullName);
       setRegisteredName(fullName);
-      setWhatsAppUrl(nextWhatsAppUrl);
+      const joinGroupUrl = ctaLink(WHATSAPP_GROUP_URL);
+      setWhatsAppUrl(joinGroupUrl);
       setAlreadyRegistered(Boolean(result.alreadyRegistered));
       if (typeof result.count === 'number') setRegistrationCount(result.count);
-      trackConversion('registration_success');
-      openWhatsAppLink(nextWhatsAppUrl);
+      trackConversion('registration_complete');
+      trackMetaLead();
+      openWhatsAppLink(joinGroupUrl);
       document.getElementById('masterclass-registration-confirmation')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch {
       setError('Connexion indisponible. Vérifie ton réseau puis réessaie.');
@@ -213,7 +269,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
       <header className="masterclass-header">
         <div className="masterclass-shell masterclass-header-inner">
           <Brand />
-          <a className="masterclass-header-cta" href="#inscription" onClick={() => trackConversion('hero_cta_click')}>Réserver ma place</a>
+          <a className="masterclass-header-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver ma place</a>
         </div>
       </header>
 
@@ -222,16 +278,17 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <div className="masterclass-shell masterclass-hero-grid">
             <div className="masterclass-hero-copy">
               <p className="masterclass-kicker"><span /> MASTERCLASS GRATUITE <i /> EN LIGNE</p>
-              <h1>De 0 à ton premier <em>client digital.</em></h1>
-              <p className="masterclass-lede">Tu as une compétence, mais tu ne sais pas encore quoi vendre, à qui, ni comment trouver tes premiers prospects ? On va tracer le chemin ensemble.</p>
+              <h1>De 0 à ton premier <em>client digital</em></h1>
+              <p className="masterclass-lede">Tu as une compétence digitale mais tu ne sais pas encore quoi vendre, à qui le vendre ou comment trouver tes premiers prospects ? Cette masterclass va te montrer une méthode claire pour passer de la compétence à une offre concrète.</p>
+              <p className="masterclass-hero-note">Masterclass gratuite ouverte aux étudiants, jeunes talents et futurs freelances de toute l’Afrique francophone.</p>
               <div className="masterclass-hero-actions">
-                <a ref={heroCtaRef} className="masterclass-button" href="#inscription" onClick={() => trackConversion('hero_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↘</span></a>
-                <p>Gratuit <span>•</span> En ligne <span>•</span> 100 places prioritaires</p>
+                <a ref={heroCtaRef} className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↘</span></a>
+                <p>Gratuit <span>•</span> En ligne <span>•</span> 19 h GMT / 20 h GMT+1</p>
               </div>
               <div className="masterclass-proofline">
                 <span>Avec Bathez Bankole</span>
-                <span>Samedi 24 octobre · 20 h</span>
-                <span>Heure du Bénin</span>
+                <span>Samedi 24 octobre 2026</span>
+                <span>19h GMT • 20h GMT+1</span>
               </div>
             </div>
 
@@ -245,29 +302,24 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                 priority
                 style={{ objectFit: 'contain', objectPosition: 'center' }}
               />
-              <figcaption className="masterclass-portrait-label">Bathez Bankole <span>·</span> Transformation digitale</figcaption>
+              <figcaption className="masterclass-portrait-label">Bathez Bankole <span>·</span> Fondateur de Novenetech</figcaption>
             </figure>
 
             <aside className="masterclass-event-panel" aria-label="Informations de la masterclass">
-              <div className="masterclass-panel-top"><span className="masterclass-live-dot" /> Rencontre en ligne</div>
+              <div className="masterclass-panel-top"><span className="masterclass-live-dot" /> Masterclass live</div>
               <div className="masterclass-event-timing">
                 <p className="masterclass-date-number">24<span>OCT</span></p>
-                <p className="masterclass-time">20<span>h</span>00</p>
+                <p className="masterclass-time">19<span>h</span>00</p>
               </div>
-              <p className="masterclass-panel-note">Samedi 24 octobre · ouverture à 19 h 45</p>
-              <p className="masterclass-timezone">Heure du Bénin · accès communiqué aux inscrits</p>
-              {priorityPlaces === null ? (
-                <p className="masterclass-seat-count">Réservations gratuites ouvertes</p>
-              ) : priorityPlaces > 0 ? (
-                <p className="masterclass-seat-count"><strong>{priorityPlaces}</strong> places prioritaires restantes <span>sur {MASTERCLASS_PRIORITY_CAPACITY}</span></p>
-              ) : (
-                <p className="masterclass-seat-count masterclass-seat-full"><strong>Quota prioritaire atteint.</strong> Les inscriptions restent ouvertes.</p>
-              )}
+              <p className="masterclass-panel-note">Samedi 24 octobre 2026</p>
+              <p className="masterclass-timezone">19h GMT • 20h GMT+1</p>
+              <p className="masterclass-timezone local-timezone">Chez vous : {localEventDate || '19:00 UTC'}</p>
+              <p className="masterclass-seat-count"><strong>Capacité du LIVE</strong> : 100 participants</p>
             </aside>
 
             <div className="masterclass-framework" aria-label="Framework de la masterclass">
               <span>Le chemin</span>
-              <div><b>Compétence</b><i>→</i><b>Problème</b><i>→</i><b>Offre</b><i>→</i><b>Prospect</b><i>→</i><b>Client</b><i>→</i><b>Revenu</b></div>
+              <div><b>Compétence</b><i>→</i><b>Problème</b><i>→</i><b>Offre</b><i>→</i><b>Prospect</b><i>→</i><b>Client</b></div>
             </div>
           </div>
           <div className="masterclass-edge-label" aria-hidden="true">APPRENDRE · APPLIQUER · AVANCER</div>
@@ -288,7 +340,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             ) : (
               <div className="masterclass-countdown-values" aria-hidden="true"><span><b>--</b><small>jours</small></span><span><b>--</b><small>heures</small></span><span><b>--</b><small>minutes</small></span><span><b>--</b><small>secondes</small></span></div>
             )}
-            <a href="#inscription" onClick={() => trackConversion('program_cta_click')}>Réserver <span aria-hidden="true">↗</span></a>
+            <a href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver <span aria-hidden="true">↗</span></a>
           </div>
         </section>
 
@@ -296,14 +348,14 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <div className="masterclass-shell masterclass-problem-grid">
             <div>
               <p className="masterclass-section-label">Le vrai point de départ</p>
-              <h2>Apprendre un outil, ce n’est pas encore avoir une offre.</h2>
+              <h2>Tu ne repartiras pas avec une simple liste de métiers digitaux.</h2>
             </div>
             <div className="masterclass-problem-copy">
-              <p className="masterclass-lead-claim">Le marché ne paie pas un outil.<br /><strong>Il paie une solution utile à un problème concret.</strong></p>
-              <p>Relie ce que tu sais faire à un besoin réel, formule une offre claire et prépare un premier message de prospection.</p>
+              <p className="masterclass-lead-claim">Tu repartiras avec une compétence de départ, une cible, une offre simple et un premier plan de prospection à tester.</p>
+              <p>Tu ne partiras pas avec une promesse de revenu. Tu partiras avec une méthode concrète pour passer de la compétence à un service clair.</p>
               <div className="masterclass-speaker-signature">
                 <div className="masterclass-monogram" aria-hidden="true">BB</div>
-                <div><strong>Bathez Bankole</strong><span>Entrepreneur · accompagnement en transformation digitale</span></div>
+                <div><strong>Bathez Bankole</strong><span>Fondateur de Novenetech</span></div>
               </div>
             </div>
           </div>
@@ -313,8 +365,8 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <div className="masterclass-shell">
             <div className="masterclass-section-heading">
               <p className="masterclass-section-label">65 à 75 minutes · concret et interactif</p>
-              <h2>À la fin, tu sauras quoi explorer ensuite.</h2>
-              <p>Pas de promesse d’argent facile. Une méthode pour choisir une piste, construire ton offre et démarrer une prospection honnête.</p>
+              <h2>Ce que tu vas pouvoir mettre en pratique.</h2>
+              <p>Tu vas clarifier une compétence, identifier une cible, construire une offre simple et commencer une prospection plus sérieuse.</p>
             </div>
             <div className="masterclass-agenda-list">
               {agenda.map((item) => (
@@ -326,11 +378,11 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
               ))}
             </div>
             <div className="masterclass-formula">
-              <span>Ta phrase de départ</span>
-              <p>J’aide <b>[un type de client]</b> à <b>[obtenir un résultat]</b> grâce à <b>[mon service]</b>.</p>
+              <span>La méthode</span>
+              <p>Compétence <b>→</b> problème <b>→</b> offre <b>→</b> prospect <b>→</b> client</p>
             </div>
             <div className="masterclass-section-cta">
-              <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+              <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
             </div>
           </div>
         </section>
@@ -339,50 +391,54 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <div className="masterclass-shell masterclass-audience-grid">
             <div>
               <p className="masterclass-section-label">Pour qui ?</p>
-              <h2>Tu n’as pas besoin d’avoir déjà tout compris.</h2>
+              <h2>Tu peux venir à n’importe quel niveau.</h2>
             </div>
             <div className="masterclass-audience-list">
-              <article><span>01</span><p>Tu es étudiant et tu veux explorer une activité digitale à côté de tes études.</p></article>
-              <article><span>02</span><p>Tu sais déjà utiliser un outil mais tu ne sais pas encore comment en faire un service clair.</p></article>
-              <article><span>03</span><p>Tu aides une entreprise ou un projet et tu veux mieux comprendre les opportunités digitales.</p></article>
+              <article><span>01</span><p>Etudiants qui veulent développer une compétence monétisable.</p></article>
+              <article><span>02</span><p>Jeunes qui maîtrisent Canva, l’IA, les réseaux sociaux, le montage, le web ou d’autres outils, mais ne savent pas comment proposer un service.</p></article>
+              <article><span>03</span><p>Débutants qui veulent comprendre comment passer d’une compétence à une offre claire.</p></article>
+              <article><span>04</span><p>Jeunes freelances qui n’ont pas encore structuré leur prospection.</p></article>
             </div>
           </div>
           <div className="masterclass-shell masterclass-audience-cta">
-            <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+          </div>
+        </section>
+
+        <section className="masterclass-section masterclass-audience-section">
+          <div className="masterclass-shell masterclass-audience-grid">
+            <div>
+              <p className="masterclass-section-label">Qui animera cette masterclass ?</p>
+              <h2>Bathez Bankole</h2>
+            </div>
+            <div className="masterclass-speaker-copy">
+              <p className="masterclass-speaker-name">Fondateur de Novenetech</p>
+              <p>Entrepreneur digital basé au Bénin, il travaille sur des projets liés au développement numérique, à l’acquisition, à l’automatisation et à la création de solutions digitales.</p>
+              <p>Cette masterclass a été conçue pour les jeunes qui apprennent des compétences digitales mais ne savent pas encore comment les transformer en une offre claire et commencer à prospecter.</p>
+            </div>
           </div>
         </section>
 
         <section className="masterclass-section masterclass-proof-section">
-          <div className="masterclass-shell">
+          <div className="masterclass-shell masterclass-proof-shell">
             <div className="masterclass-section-heading masterclass-proof-heading">
-              <p className="masterclass-section-label">Ils ont déjà franchi le cap</p>
-              <h2>Avant de choisir une piste, certains ont déjà commencé.</h2>
+              <p className="masterclass-section-label">Pourquoi cette masterclass existe</p>
+              <h2>Beaucoup de jeunes apprennent des compétences digitales, mais pas encore la manière de les monétiser.</h2>
             </div>
-            <div className="masterclass-proof-grid">
-              <article className="masterclass-proof-card">
-                <span className="masterclass-proof-avatar" aria-hidden="true">B</span>
-                <h3>Béatrice</h3>
-                <p>Accompagnée pour clarifier sa valeur et passer de l’idée au premier service rentable.</p>
-              </article>
-              <article className="masterclass-proof-card">
-                <span className="masterclass-proof-avatar" aria-hidden="true">P</span>
-                <h3>Pacome</h3>
-                <p>Suivi pour identifier une porte d’entrée digitale claire et structurer son offre.</p>
-              </article>
-              <article className="masterclass-proof-card">
-                <span className="masterclass-proof-avatar" aria-hidden="true">Y</span>
-                <h3>Yann</h3>
-                <p>Accompagné pour transformer un savoir-faire en proposition concrète et utile.</p>
-              </article>
+            <div className="masterclass-proof-copy">
+              <p>Beaucoup de jeunes apprennent Canva, l’intelligence artificielle, le community management, le montage, le développement web ou d’autres compétences digitales.</p>
+              <p><strong>Mais maîtriser un outil ne suffit pas pour obtenir un client.</strong></p>
+              <p>Il faut comprendre quel problème résoudre, pour qui, construire une offre claire et savoir démarrer une conversation commerciale.</p>
+              <p>C’est précisément ce que cette masterclass va permettre d’explorer.</p>
             </div>
           </div>
         </section>
 
         <section className="masterclass-bonus-band">
           <div className="masterclass-shell masterclass-bonus-content">
-            <span className="masterclass-bonus-index">Indice cadeau</span>
-            <p>Le cadeau vaut 25 000 FCFA.<br /><strong>Il s’agit d’une formation pour aller plus vite, plus claire, plus utile.</strong></p>
-            <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+            <span className="masterclass-bonus-index">Bonus réservé aux participants</span>
+            <p><strong>La fiche “Premier client”</strong><br />Tu travailleras sur ta compétence de départ, ta cible, le problème à résoudre, ton offre, ton premier message de prospection et ton mini-plan d’action.</p>
+            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je veux participer gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
 
@@ -391,26 +447,23 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             <div className="masterclass-registration-copy">
               <p className="masterclass-section-label">Réservation gratuite</p>
               <h2>Garde ta soirée du 24 octobre.</h2>
-              <p>La salle en ligne ouvrira à 19 h 45. La masterclass commencera à 20 h, heure du Bénin. Les informations d’accès seront transmises aux inscrits sur WhatsApp.</p>
-              {priorityPlaces === null ? (
-                <p className="masterclass-registration-seat">Inscriptions gratuites ouvertes.</p>
-              ) : priorityPlaces > 0 ? (
-                <p className="masterclass-registration-seat">Il reste <strong>{priorityPlaces} places prioritaires</strong> sur 100. Les inscriptions resteront possibles ensuite.</p>
-              ) : (
-                <p className="masterclass-registration-seat">Les 100 places prioritaires sont attribuées ; les inscriptions restent ouvertes.</p>
-              )}
+              <p>Le LIVE se tiendra à 19 h GMT / 20 h GMT+1. Les informations d’accès, rappel et lien du direct seront communiqués dans le groupe WhatsApp officiel.</p>
+              <p className="masterclass-registration-seat">Capacité du LIVE : <strong>100 participants</strong></p>
               <div className="masterclass-registration-facts"><span>100 % gratuit</span><span>En ligne</span><span>Questions en direct</span></div>
-              <p className="masterclass-trust-note">Tes informations servent uniquement à gérer ton inscription et à t’envoyer les informations liées à la masterclass.</p>
+              <p className="masterclass-trust-note">Tes informations servent uniquement à gérer ta réservation et à t’envoyer les informations liées à la masterclass.</p>
             </div>
 
             {whatsAppUrl ? (
               <div className="masterclass-confirmation" id="masterclass-registration-confirmation" role="status" aria-live="polite">
                 <span className="masterclass-confirmation-mark" aria-hidden="true">✓</span>
-                <p className="masterclass-section-label">{alreadyRegistered ? 'Ta réservation existe déjà' : 'C’est réservé'}</p>
-                <h3>Merci{registeredName ? `, ${registeredName.split(' ')[0]}` : ''}.</h3>
-                <p>Ta place est enregistrée. Le message WhatsApp avec tes informations pratiques a été préparé automatiquement. Si la fenêtre ne s’ouvre pas, utilise le bouton ci-dessous.</p>
-                <a className="masterclass-button" href={whatsAppUrl} target="_blank" rel="noopener noreferrer" onClick={() => openWhatsAppLink(whatsAppUrl)}>Ouvrir WhatsApp <span aria-hidden="true">↗</span></a>
-                <small>Tu as juste à confirmer l’envoi dans WhatsApp pour recevoir le lien d’accès.</small>
+                <p className="masterclass-section-label">✅ Ta place est réservée</p>
+                <h3>Dernière étape : rejoins le groupe WhatsApp officiel de la masterclass.</h3>
+                <p>Les rappels, informations pratiques et le lien du LIVE seront communiqués dans ce groupe.</p>
+                <a className="masterclass-button" href={whatsAppUrl} target="_blank" rel="noopener noreferrer" onClick={() => {
+                  trackConversion('whatsapp_click');
+                  openWhatsAppLink(whatsAppUrl);
+                }}>Rejoindre le groupe WhatsApp <span aria-hidden="true">↗</span></a>
+                <small>Cette étape prend moins de 10 secondes.</small>
                 <button type="button" className="masterclass-text-button" onClick={() => { setWhatsAppUrl(''); setRegisteredName(''); }}>Inscrire une autre personne</button>
               </div>
             ) : (
@@ -423,19 +476,21 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                 <div className="masterclass-form-heading"><span>01 / 03</span><p>Quelques détails pour réserver</p></div>
                 <label htmlFor="masterclass-name">Nom complet</label>
                 <input id="masterclass-name" name="fullName" autoComplete="name" minLength={2} maxLength={100} required placeholder="Ex. Amina K. Mensah" />
-                <label htmlFor="masterclass-email">Adresse email</label>
+                <label htmlFor="masterclass-email">Adresse e-mail</label>
                 <input id="masterclass-email" name="email" type="email" autoComplete="email" maxLength={254} required placeholder="toi@exemple.com" />
-                <label htmlFor="masterclass-whatsapp">Numéro WhatsApp</label>
+                <label htmlFor="masterclass-whatsapp">Numéro WhatsApp avec indicatif pays</label>
                 <div className="masterclass-phone-row">
-                  <select id="masterclass-country-code" name="countryCode" aria-label="Indicatif téléphonique" defaultValue="+229" onChange={(event) => setOtherDialCodeSelected(event.currentTarget.value === 'other')}>
-                    <option value="+229">BJ +229</option>
-                    <option value="+228">TG +228</option>
+                  <select id="masterclass-country-code" name="countryCode" aria-label="Indicatif téléphonique" defaultValue="" onChange={(event) => setOtherDialCodeSelected(event.currentTarget.value === 'other')}>
+                    <option value="" disabled>Sélectionne ton indicatif</option>
                     <option value="+225">CI +225</option>
                     <option value="+221">SN +221</option>
+                    <option value="+237">CM +237</option>
+                    <option value="+243">CD +243</option>
+                    <option value="+242">CG +242</option>
                     <option value="+226">BF +226</option>
+                    <option value="+229">BJ +229</option>
+                    <option value="+228">TG +228</option>
                     <option value="+33">FR +33</option>
-                    <option value="+1">US/CA +1</option>
-                    <option value="+234">NG +234</option>
                     <option value="other">Autre</option>
                   </select>
                   {otherDialCodeSelected && <input className="masterclass-custom-dial-code" type="text" name="otherDialCode" inputMode="tel" autoComplete="tel-country-code" pattern="\+[1-9][0-9]{0,2}" required aria-label="Saisis ton indicatif, par exemple +49" placeholder="+49" />}
@@ -443,7 +498,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                 </div>
                 <small id="masterclass-phone-hint">Choisis ton indicatif, puis saisis ton numéro sans le préfixe international.</small>
                 <div className="masterclass-honeypot" aria-hidden="true"><label htmlFor="masterclass-website">Site web</label><input id="masterclass-website" name="website" tabIndex={-1} autoComplete="off" /></div>
-                <label className="masterclass-consent"><input type="checkbox" name="consent" required /><span>J’accepte de recevoir par WhatsApp ou email les informations pratiques de cette masterclass et de Novenetech Campus.</span></label>
+                <label className="masterclass-consent"><input type="checkbox" name="consent" required /><span>J’accepte de recevoir par WhatsApp ou e-mail les informations pratiques de cette masterclass.</span></label>
                 {error && <p className="masterclass-form-error" role="alert">{error}</p>}
                 <button className="masterclass-button" type="submit" disabled={submitting}>
                   {submitting ? 'Enregistrement…' : 'Réserver gratuitement'} <span aria-hidden="true">↗</span>
@@ -457,7 +512,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
         <section className="masterclass-pre-faq-cta" aria-label="Réserver sa place avant les questions">
           <div className="masterclass-shell">
             <p>Le direct est gratuit. Réserve ta place et prépare tes questions.</p>
-            <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
 
@@ -480,7 +535,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             </div>
           </div>
           <div className="masterclass-shell masterclass-faq-cta">
-            <a className="masterclass-button" href="#inscription" onClick={() => trackConversion('program_cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
+            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
       </main>
@@ -492,7 +547,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <Link href="/">Découvrir Novenetech Campus</Link>
         </div>
       </footer>
-      {stickyCtaVisible && <a className="masterclass-mobile-cta" href="#inscription" onClick={() => trackConversion('sticky_cta_click')}>Réserver ma place <span aria-hidden="true">↗</span></a>}
+      {stickyCtaVisible && <a className="masterclass-mobile-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver gratuitement <span aria-hidden="true">↗</span></a>}
     </div>
   );
 }

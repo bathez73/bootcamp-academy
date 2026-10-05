@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceRoleClient } from '@/lib/supabase/server';
-import { normalizeWhatsAppNumber } from '@/lib/masterclass-registration';
+import { normalizeWhatsAppNumber, sanitizeUTMParameters } from '@/lib/masterclass-registration';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
   const email = typeof form.email === 'string' ? form.email.trim().toLowerCase() : '';
   const whatsapp = typeof form.whatsapp === 'string' ? normalizeWhatsAppNumber(form.whatsapp) : null;
   const consent = form.consent === true;
+  const utm = sanitizeUTMParameters(form);
 
   if (fullName.length < 2 || fullName.length > 100 || /[\u0000-\u001f<>]/.test(fullName)) {
     return NextResponse.json({ error: 'Indique ton nom complet.' }, { status: 400 });
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
     email,
     whatsapp,
     consent,
+    ...utm,
   });
 
   if (error?.code === '23505') {
