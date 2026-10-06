@@ -254,6 +254,10 @@
   .masterclass-audience-list { grid-template-columns: 1fr; gap: 8px; }
   .masterclass-audience-list article { grid-template-columns: 32px 1fr; gap: 8px; padding: 14px; }
   .masterclass-audience-list p { font-size: 15px; line-height: 1.45; }
+  .masterclass-proof-section { padding-block: 24px; }
+  .masterclass-proof-heading { margin-bottom: 12px; }
+  .masterclass-proof-heading h2 { font-size: 30px; line-height: 1.08; }
+  .masterclass-proof-copy p { margin: 0 0 8px; font-size: 15px; line-height: 1.4; }
   .masterclass-proof-grid { grid-template-columns: 1fr; gap: 12px; }
   .masterclass-bonus-content { grid-template-columns: 1fr; gap: 12px; min-height: 0; padding-block: 22px; }
   .masterclass-bonus-index { font-size: 11px; }
