@@ -2,34 +2,33 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Brand from '@/components/Brand';
 import {
   buildTrackedHref,
   getEventUtcTimestamp,
-  getPriorityPlacesRemaining,
   getUTMParameters,
+  normalizeWhatsAppNumber,
+  sanitizeUTMParameters,
 } from '@/lib/masterclass-registration';
 
 type RegistrationResult = {
   ok?: boolean;
-  count?: number;
-  alreadyRegistered?: boolean;
   error?: string;
 };
 
-type MasterclassLandingProps = {
-  initialRegistrationCount: number | null;
-};
-
 const EVENT_AT = getEventUtcTimestamp();
-const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/FMoQAjUu9nk6z5X40nadbq';
+const WHATSAPP_GROUP_URL = process.env.NEXT_PUBLIC_WHATSAPP_GROUP_URL || 'https://chat.whatsapp.com/FMoQAjUu9nk6z5X40nadbq';
+const PLACES_RESTANTES: number | null = null; // TODO_CONTENU: renseigner uniquement un décompte confirmé.
 const FAQ_ITEMS = [
   ['La masterclass est-elle vraiment gratuite ?', 'Oui. La réservation et la participation à cette session en ligne sont gratuites.'],
-  ['À quelle heure dois-je me connecter ?', 'Le LIVE débute à 19 h GMT / 20 h GMT+1, le samedi 24 octobre 2026.'],
+  ['À quelle heure dois-je me connecter ?', 'Samedi 24 octobre · 19h00 GMT (20h00 Bénin/Cameroun).'],
   ['Comment vais-je recevoir le lien d’accès ?', 'Les informations pratiques et le lien du LIVE seront partagés dans le groupe WhatsApp officiel de la masterclass.'],
   ['Faut-il déjà avoir une compétence digitale ?', 'Non. La session est conçue pour t’aider à aller du savoir-faire à une offre claire, même en commençant avec peu de structure.'],
   ['Est-ce que la masterclass garantit un premier client ou un revenu ?', 'Non. Elle donne une méthode et des outils concrets pour tester une offre, mais les résultats dépendent de ton action, de ton marché et de tes démarches.'],
+  ['Y aura-t-il un replay ?', 'TODO_CONTENU : confirmer si un replay sera disponible et ses conditions d’accès.'],
+  ['Sur quelle plateforme aura lieu le LIVE ?', 'TODO_CONTENU : confirmer la plateforme de diffusion avant publication.'],
+  ['Puis-je suivre la masterclass depuis un téléphone ?', 'TODO_CONTENU : confirmer les conditions de suivi depuis un téléphone selon la plateforme retenue.'],
 ];
 
 type LandingConversionEvent = 'landing_view' | 'cta_click' | 'form_view' | 'form_start' | 'form_submit' | 'registration_complete' | 'whatsapp_click';
@@ -94,14 +93,64 @@ function formatCountdown(milliseconds: number) {
 }
 
 function getLocalEventSummary() {
-  const eventDate = new Date(EVENT_AT);
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short',
-    hour12: false,
-  });
-  return formatter.format(eventDate);
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date(EVENT_AT));
+  } catch {
+    return '19:00 GMT';
+  }
+}
+
+function subscribeToTimeZoneChanges() {
+  return () => undefined;
+}
+
+function getServerEventTime() {
+  return '19:00 GMT';
+}
+
+const EMPTY_UTM_PARAMETERS: Record<string, string> = {};
+let cachedUtmLocation = '';
+let cachedUtmParameters = EMPTY_UTM_PARAMETERS;
+
+function getLandingUtmParameters() {
+  if (typeof window === 'undefined') return EMPTY_UTM_PARAMETERS;
+  if (window.location.href === cachedUtmLocation) return cachedUtmParameters;
+
+  const fromUrl = getUTMParameters(window.location.href);
+  let params = fromUrl;
+  if (!Object.keys(fromUrl).length) {
+    try {
+      params = sanitizeUTMParameters(JSON.parse(window.sessionStorage.getItem('masterclass_utm') || '{}'));
+    } catch {
+      params = EMPTY_UTM_PARAMETERS;
+    }
+  }
+
+  cachedUtmLocation = window.location.href;
+  cachedUtmParameters = params;
+  return cachedUtmParameters;
+}
+
+function getCalendarHref() {
+  const calendar = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Novenetech//Masterclass//FR',
+    'BEGIN:VEVENT',
+    'UID:masterclass-20261024T190000Z@novenetech',
+    'DTSTAMP:20261006T000000Z',
+    'DTSTART:20261024T190000Z',
+    'DTEND:20261024T201500Z',
+    'SUMMARY:Masterclass - De 0 à ton premier client digital',
+    'DESCRIPTION:Masterclass en ligne Novenetech',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(calendar)}`;
 }
 
 function openWhatsAppLink(url: string) {
@@ -114,45 +163,38 @@ function openWhatsAppLink(url: string) {
   }
 }
 
-export default function MasterclassLanding({ initialRegistrationCount }: MasterclassLandingProps) {
-  const [registrationCount, setRegistrationCount] = useState<number | null>(initialRegistrationCount);
+export default function MasterclassLanding() {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [registeredName, setRegisteredName] = useState('');
   const [whatsAppUrl, setWhatsAppUrl] = useState('');
-  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [otherDialCodeSelected, setOtherDialCodeSelected] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [stickyCtaVisible, setStickyCtaVisible] = useState(false);
-  const [utmParams, setUtmParams] = useState<Record<string, string>>({});
-  const [localEventDate, setLocalEventDate] = useState('');
-  const heroCtaRef = useRef<HTMLAnchorElement>(null);
+  const utmParams = useSyncExternalStore(subscribeToTimeZoneChanges, getLandingUtmParameters, () => EMPTY_UTM_PARAMETERS);
+  const localEventDate = useSyncExternalStore(subscribeToTimeZoneChanges, getLocalEventSummary, getServerEventTime);
+  const [heroEmail, setHeroEmail] = useState('');
+  const [heroWhatsapp, setHeroWhatsapp] = useState('');
+  const [registrationEmail, setRegistrationEmail] = useState('');
+  const [registrationCountryCode, setRegistrationCountryCode] = useState('+229');
+  const [registrationWhatsapp, setRegistrationWhatsapp] = useState('');
+  const [registrationOtherDialCode, setRegistrationOtherDialCode] = useState('');
+  const [heroError, setHeroError] = useState('');
+  const heroCtaRef = useRef<HTMLButtonElement>(null);
   const formSectionRef = useRef<HTMLElement>(null);
   const formStartedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    setLocalEventDate(getLocalEventSummary());
-
-    const nextUtm = getUTMParameters(window.location.href);
-    const stored = window.sessionStorage.getItem('masterclass_utm');
-    let merged = nextUtm;
-    if (!Object.keys(nextUtm).length && stored) {
+    if (Object.keys(utmParams).length) {
       try {
-        merged = JSON.parse(stored) as Record<string, string>;
+        window.sessionStorage.setItem('masterclass_utm', JSON.stringify(utmParams));
       } catch {
-        merged = {};
+        return;
       }
     }
-
-    if (Object.keys(merged).length) {
-      window.sessionStorage.setItem('masterclass_utm', JSON.stringify(merged));
-    }
-
-    setUtmParams(merged);
-  }, []);
+  }, [utmParams]);
 
   useEffect(() => {
     trackConversion('landing_view');
@@ -195,20 +237,35 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    fetch('/api/masterclass-registrations', { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() as Promise<{ count: number }> : null)
-      .then((result) => {
-        if (active && result && Number.isFinite(result.count)) setRegistrationCount(result.count);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const ctaLink = (hash: string) => buildTrackedHref(hash, utmParams);
+
+  function continueFromHero(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setHeroError('');
+    setError('');
+    const normalizedPhone = normalizeWhatsAppNumber(heroWhatsapp);
+    if (!normalizedPhone) {
+      setHeroError('Indique un numéro WhatsApp international valide.');
+      return;
+    }
+
+    const supportedCodes = ['+237', '+243', '+242', '+234', '+229', '+228', '+226', '+225', '+221', '+49', '+44', '+33', '+1'];
+    const dialCode = supportedCodes.find((code) => normalizedPhone.startsWith(code));
+    const isSupportedCode = Boolean(dialCode);
+    setRegistrationEmail(heroEmail.trim());
+    setRegistrationCountryCode(isSupportedCode ? dialCode! : 'other');
+    setOtherDialCodeSelected(!isSupportedCode);
+    setRegistrationOtherDialCode('');
+    setRegistrationWhatsapp(isSupportedCode ? normalizedPhone.slice(dialCode!.length) : '');
+    if (!isSupportedCode) {
+      const message = 'Indicatif non reconnu automatiquement. Sélectionne « Autre » et saisis ton indicatif dans le formulaire complet.';
+      setHeroError(message);
+      setError(message);
+    }
+    trackConversion('form_start', { source: 'hero' });
+    document.getElementById('inscription')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => document.getElementById('masterclass-name')?.focus({ preventScroll: true }), 350);
+  }
 
   async function submitRegistration(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -245,11 +302,8 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
         return;
       }
 
-      setRegisteredName(fullName);
       const joinGroupUrl = ctaLink(WHATSAPP_GROUP_URL);
       setWhatsAppUrl(joinGroupUrl);
-      setAlreadyRegistered(Boolean(result.alreadyRegistered));
-      if (typeof result.count === 'number') setRegistrationCount(result.count);
       trackConversion('registration_complete');
       trackMetaLead();
       openWhatsAppLink(joinGroupUrl);
@@ -261,7 +315,6 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
     }
   }
 
-  const priorityPlaces = registrationCount === null ? null : getPriorityPlacesRemaining(registrationCount);
   const countdown = remainingTime === null ? null : formatCountdown(remainingTime);
 
   return (
@@ -269,7 +322,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
       <header className="masterclass-header">
         <div className="masterclass-shell masterclass-header-inner">
           <Brand />
-          <a className="masterclass-header-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver ma place</a>
+          <a className="masterclass-header-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement</a>
         </div>
       </header>
 
@@ -282,26 +335,37 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
               <p className="masterclass-lede">Tu as une compétence digitale mais tu ne sais pas encore quoi vendre, à qui le vendre ou comment trouver tes premiers prospects ? Cette masterclass va te montrer une méthode claire pour passer de la compétence à une offre concrète.</p>
               <p className="masterclass-hero-note">Masterclass gratuite ouverte aux étudiants, jeunes talents et futurs freelances de toute l’Afrique francophone.</p>
               <div className="masterclass-hero-actions">
-                <a ref={heroCtaRef} className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↘</span></a>
-                <p>Gratuit <span>•</span> En ligne <span>•</span> 19 h GMT / 20 h GMT+1</p>
+                <form className="masterclass-hero-form" onSubmit={continueFromHero}>
+                  <label htmlFor="masterclass-hero-email">Adresse e-mail</label>
+                  <input id="masterclass-hero-email" type="email" autoComplete="email" required value={heroEmail} onChange={(event) => setHeroEmail(event.currentTarget.value)} placeholder="toi@exemple.com" />
+                  <label htmlFor="masterclass-hero-whatsapp">Numéro WhatsApp international</label>
+                  <input id="masterclass-hero-whatsapp" type="tel" autoComplete="tel" inputMode="tel" required value={heroWhatsapp} onChange={(event) => setHeroWhatsapp(event.currentTarget.value)} placeholder="+229 52 52 79 13" />
+                  {heroError && <p className="masterclass-form-error" role="alert">{heroError}</p>}
+                  <button ref={heroCtaRef} className="masterclass-button" type="submit" onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↘</span></button>
+                </form>
+                <p>Gratuit <span>•</span> En ligne <span>•</span> 19h00 GMT (20h00 Bénin/Cameroun)</p>
               </div>
               <div className="masterclass-proofline">
                 <span>Avec Bathez Bankole</span>
-                <span>Samedi 24 octobre 2026</span>
-                <span>19h GMT • 20h GMT+1</span>
+                <span>Samedi 24 octobre · 19h00 GMT (20h00 Bénin/Cameroun)</span>
               </div>
             </div>
 
             <figure className="masterclass-hero-portrait">
-              <Image
-                src="/Portrait%20d%C3%A9coup%C3%A9%20d%E2%80%99un%20homme%20souriant.png"
-                alt="Bathez Bankole, présentateur de la masterclass Novenetech"
-                fill
-                sizes="(max-width: 650px) calc(100vw - 36px), (max-width: 900px) 42vw, 34vw"
-                quality={85}
-                priority
-                style={{ objectFit: 'contain', objectPosition: 'center' }}
-              />
+              <picture>
+                <source srcSet="/bathez-bankole.avif" type="image/avif" />
+                <Image
+                  src="/bathez-bankole.webp"
+                  alt="Bathez Bankole, présentateur de la masterclass Novenetech"
+                  width={1278}
+                  height={1231}
+                  sizes="(max-width: 650px) calc(100vw - 36px), (max-width: 900px) 42vw, 34vw"
+                  loading="eager"
+                  priority
+                  unoptimized
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
+                />
+              </picture>
               <figcaption className="masterclass-portrait-label">Bathez Bankole <span>·</span> Fondateur de Novenetech</figcaption>
             </figure>
 
@@ -311,9 +375,8 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                 <p className="masterclass-date-number">24<span>OCT</span></p>
                 <p className="masterclass-time">19<span>h</span>00</p>
               </div>
-              <p className="masterclass-panel-note">Samedi 24 octobre 2026</p>
-              <p className="masterclass-timezone">19h GMT • 20h GMT+1</p>
-              <p className="masterclass-timezone local-timezone">Chez vous : {localEventDate || '19:00 UTC'}</p>
+              <p className="masterclass-panel-note">Samedi 24 octobre · 19h00 GMT (20h00 Bénin/Cameroun)</p>
+              <p className="masterclass-timezone local-timezone">Chez vous : {localEventDate}</p>
               <p className="masterclass-seat-count"><strong>Capacité du LIVE</strong> : 100 participants</p>
             </aside>
 
@@ -340,7 +403,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             ) : (
               <div className="masterclass-countdown-values" aria-hidden="true"><span><b>--</b><small>jours</small></span><span><b>--</b><small>heures</small></span><span><b>--</b><small>minutes</small></span><span><b>--</b><small>secondes</small></span></div>
             )}
-            <a href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver <span aria-hidden="true">↗</span></a>
+            <a href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
 
@@ -411,10 +474,44 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
               <p className="masterclass-section-label">Qui animera cette masterclass ?</p>
               <h2>Bathez Bankole</h2>
             </div>
-            <div className="masterclass-speaker-copy">
-              <p className="masterclass-speaker-name">Fondateur de Novenetech</p>
-              <p>Entrepreneur digital basé au Bénin, il travaille sur des projets liés au développement numérique, à l’acquisition, à l’automatisation et à la création de solutions digitales.</p>
-              <p>Cette masterclass a été conçue pour les jeunes qui apprennent des compétences digitales mais ne savent pas encore comment les transformer en une offre claire et commencer à prospecter.</p>
+            <div className="masterclass-speaker-layout">
+              <Image
+                src="/bathez-bankole.webp"
+                alt="Bathez Bankole, fondateur de Novenetech"
+                width={1278}
+                height={1231}
+                sizes="(max-width: 650px) 100vw, (max-width: 900px) 40vw, 360px"
+                loading="lazy"
+                unoptimized
+                className="masterclass-speaker-photo"
+              />
+              <div className="masterclass-speaker-copy">
+                <p className="masterclass-speaker-name">Fondateur de Novenetech</p>
+                <p>Entrepreneur digital basé au Bénin, il travaille sur des projets liés au développement numérique, à l’acquisition, à l’automatisation et à la création de solutions digitales.</p>
+                <p>Cette masterclass a été conçue pour les jeunes qui apprennent des compétences digitales mais ne savent pas encore comment les transformer en une offre claire et commencer à prospecter.</p>
+                <div className="masterclass-speaker-metrics" aria-label="Chiffres clés de l’animateur">
+                  <article><strong>TODO_CONTENU</strong><span>Chiffre clé 1 à confirmer</span></article>
+                  <article><strong>TODO_CONTENU</strong><span>Chiffre clé 2 à confirmer</span></article>
+                  <article><strong>TODO_CONTENU</strong><span>Chiffre clé 3 à confirmer</span></article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="masterclass-section masterclass-testimonials-section" aria-labelledby="masterclass-testimonials-title">
+          <div className="masterclass-shell">
+            <div className="masterclass-section-heading">
+              <p className="masterclass-section-label">Ils en parlent</p>
+              <h2 id="masterclass-testimonials-title">Ils en parlent</h2>
+            </div>
+            <div className="masterclass-testimonial-grid">
+              {[1, 2, 3].map((item) => (
+                <article className="masterclass-testimonial" key={item}>
+                  <p>TODO_CONTENU : témoignage réel à fournir.</p>
+                  <span>TODO_CONTENU : prénom et contexte à confirmer.</span>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -436,9 +533,11 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
 
         <section className="masterclass-bonus-band">
           <div className="masterclass-shell masterclass-bonus-content">
-            <span className="masterclass-bonus-index">Bonus réservé aux participants</span>
-            <p><strong>La fiche “Premier client”</strong><br />Tu travailleras sur ta compétence de départ, ta cible, le problème à résoudre, ton offre, ton premier message de prospection et ton mini-plan d’action.</p>
-            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je veux participer gratuitement <span aria-hidden="true">↗</span></a>
+            <div className="masterclass-bonus-copy">
+              <span className="masterclass-bonus-index">Bonus réservé aux participants</span>
+              <p><strong>La fiche “Premier client”</strong><br />Tu travailleras sur ta compétence de départ, ta cible, le problème à résoudre, ton offre, ton premier message de prospection et ton mini-plan d’action.</p>
+            </div>
+            <a className="masterclass-button" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>
           </div>
         </section>
 
@@ -447,7 +546,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             <div className="masterclass-registration-copy">
               <p className="masterclass-section-label">Réservation gratuite</p>
               <h2>Garde ta soirée du 24 octobre.</h2>
-              <p>Le LIVE se tiendra à 19 h GMT / 20 h GMT+1. Les informations d’accès, rappel et lien du direct seront communiqués dans le groupe WhatsApp officiel.</p>
+              <p>Samedi 24 octobre · 19h00 GMT (20h00 Bénin/Cameroun). Les informations d’accès, rappel et lien du direct seront communiqués dans le groupe WhatsApp officiel.</p>
               <p className="masterclass-registration-seat">Capacité du LIVE : <strong>100 participants</strong></p>
               <div className="masterclass-registration-facts"><span>100 % gratuit</span><span>En ligne</span><span>Questions en direct</span></div>
               <p className="masterclass-trust-note">Tes informations servent uniquement à gérer ta réservation et à t’envoyer les informations liées à la masterclass.</p>
@@ -456,15 +555,16 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
             {whatsAppUrl ? (
               <div className="masterclass-confirmation" id="masterclass-registration-confirmation" role="status" aria-live="polite">
                 <span className="masterclass-confirmation-mark" aria-hidden="true">✓</span>
-                <p className="masterclass-section-label">✅ Ta place est réservée</p>
+                <p className="masterclass-confirmation-title">Ta place est réservée</p>
                 <h3>Dernière étape : rejoins le groupe WhatsApp officiel de la masterclass.</h3>
                 <p>Les rappels, informations pratiques et le lien du LIVE seront communiqués dans ce groupe.</p>
                 <a className="masterclass-button" href={whatsAppUrl} target="_blank" rel="noopener noreferrer" onClick={() => {
                   trackConversion('whatsapp_click');
                   openWhatsAppLink(whatsAppUrl);
                 }}>Rejoindre le groupe WhatsApp <span aria-hidden="true">↗</span></a>
+                <a className="masterclass-calendar-button" href={getCalendarHref()} download="masterclass-2026-10-24.ics">Ajouter à mon agenda</a>
                 <small>Cette étape prend moins de 10 secondes.</small>
-                <button type="button" className="masterclass-text-button" onClick={() => { setWhatsAppUrl(''); setRegisteredName(''); }}>Inscrire une autre personne</button>
+                <button type="button" className="masterclass-text-button" onClick={() => setWhatsAppUrl('')}>Inscrire une autre personne</button>
               </div>
             ) : (
               <form className="masterclass-registration-form" onSubmit={submitRegistration} onFocusCapture={() => {
@@ -473,15 +573,18 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                   trackConversion('form_start');
                 }
               }}>
-                <div className="masterclass-form-heading"><span>01 / 03</span><p>Quelques détails pour réserver</p></div>
+                <div className="masterclass-form-heading"><p>Quelques détails pour réserver</p></div>
                 <label htmlFor="masterclass-name">Nom complet</label>
                 <input id="masterclass-name" name="fullName" autoComplete="name" minLength={2} maxLength={100} required placeholder="Ex. Amina K. Mensah" />
                 <label htmlFor="masterclass-email">Adresse e-mail</label>
-                <input id="masterclass-email" name="email" type="email" autoComplete="email" maxLength={254} required placeholder="toi@exemple.com" />
+                <input id="masterclass-email" name="email" type="email" autoComplete="email" maxLength={254} required value={registrationEmail} onChange={(event) => setRegistrationEmail(event.currentTarget.value)} placeholder="toi@exemple.com" />
                 <label htmlFor="masterclass-whatsapp">Numéro WhatsApp avec indicatif pays</label>
                 <div className="masterclass-phone-row">
-                  <select id="masterclass-country-code" name="countryCode" aria-label="Indicatif téléphonique" defaultValue="" onChange={(event) => setOtherDialCodeSelected(event.currentTarget.value === 'other')}>
-                    <option value="" disabled>Sélectionne ton indicatif</option>
+                  <select id="masterclass-country-code" name="countryCode" aria-label="Indicatif téléphonique" value={registrationCountryCode} onChange={(event) => {
+                    setRegistrationCountryCode(event.currentTarget.value);
+                    setOtherDialCodeSelected(event.currentTarget.value === 'other');
+                    if (event.currentTarget.value !== 'other') setRegistrationOtherDialCode('');
+                  }}>
                     <option value="+225">CI +225</option>
                     <option value="+221">SN +221</option>
                     <option value="+237">CM +237</option>
@@ -491,18 +594,23 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
                     <option value="+229">BJ +229</option>
                     <option value="+228">TG +228</option>
                     <option value="+33">FR +33</option>
+                    <option value="+234">NG +234</option>
+                    <option value="+1">US/CA +1</option>
+                    <option value="+44">UK +44</option>
+                    <option value="+49">DE +49</option>
                     <option value="other">Autre</option>
                   </select>
-                  {otherDialCodeSelected && <input className="masterclass-custom-dial-code" type="text" name="otherDialCode" inputMode="tel" autoComplete="tel-country-code" pattern="\+[1-9][0-9]{0,2}" required aria-label="Saisis ton indicatif, par exemple +49" placeholder="+49" />}
-                  <input id="masterclass-whatsapp" name="whatsapp" type="tel" autoComplete="tel-national" inputMode="tel" required placeholder="52 52 79 13" aria-describedby="masterclass-phone-hint" />
+                  {otherDialCodeSelected && <input className="masterclass-custom-dial-code" type="text" name="otherDialCode" inputMode="tel" autoComplete="tel-country-code" pattern="\+[1-9][0-9]{0,2}" required value={registrationOtherDialCode} onChange={(event) => setRegistrationOtherDialCode(event.currentTarget.value)} aria-label="Saisis ton indicatif, par exemple +49" placeholder="+49" />}
+                  <input id="masterclass-whatsapp" name="whatsapp" type="tel" autoComplete="tel-national" inputMode="tel" required value={registrationWhatsapp} onChange={(event) => setRegistrationWhatsapp(event.currentTarget.value)} placeholder="52 52 79 13" aria-describedby="masterclass-phone-hint" />
                 </div>
                 <small id="masterclass-phone-hint">Choisis ton indicatif, puis saisis ton numéro sans le préfixe international.</small>
                 <div className="masterclass-honeypot" aria-hidden="true"><label htmlFor="masterclass-website">Site web</label><input id="masterclass-website" name="website" tabIndex={-1} autoComplete="off" /></div>
-                <label className="masterclass-consent"><input type="checkbox" name="consent" required /><span>J’accepte de recevoir par WhatsApp ou e-mail les informations pratiques de cette masterclass.</span></label>
+                <label className="masterclass-consent"><input type="checkbox" name="consent" required /><span>J’accepte de recevoir par WhatsApp ou e-mail les informations pratiques de cette masterclass. <a href="#" onClick={(event) => event.preventDefault()}>Politique de confidentialité</a>{/* TODO_CONTENU: remplacer # par l’URL publiée de la politique. */}</span></label>
                 {error && <p className="masterclass-form-error" role="alert">{error}</p>}
                 <button className="masterclass-button" type="submit" disabled={submitting}>
-                  {submitting ? 'Enregistrement…' : 'Réserver gratuitement'} <span aria-hidden="true">↗</span>
+                  {submitting ? 'Enregistrement…' : 'Je réserve ma place gratuitement'} <span aria-hidden="true">↗</span>
                 </button>
+                {PLACES_RESTANTES !== null && PLACES_RESTANTES > 0 && <p className="masterclass-places-remaining">Plus que {PLACES_RESTANTES} places</p>}
                 <small className="masterclass-privacy-note">Tes coordonnées servent à gérer ta réservation et à t’envoyer les informations relatives à l’événement.</small>
               </form>
             )}
@@ -547,7 +655,7 @@ export default function MasterclassLanding({ initialRegistrationCount }: Masterc
           <Link href="/">Découvrir Novenetech Campus</Link>
         </div>
       </footer>
-      {stickyCtaVisible && <a className="masterclass-mobile-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Réserver gratuitement <span aria-hidden="true">↗</span></a>}
+      {stickyCtaVisible && <a className="masterclass-mobile-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>}
     </div>
   );
 }

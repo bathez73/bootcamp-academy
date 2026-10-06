@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Bootcamp-Academy by Novenetech';
+export const alt = 'Bootcamp Academy by Novenetech';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -45,7 +45,7 @@ export default function OGImage() {
             N
           </div>
           <div style={{ color: '#ffffff', fontSize: 40, fontWeight: 700 }}>
-            Bootcamp-Academy
+            Bootcamp Academy
           </div>
         </div>
         <div style={{ color: '#58e4a8', fontSize: 56, fontWeight: 800, textAlign: 'center' }}>
