@@ -24,8 +24,16 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin) {
-    return NextResponse.json({ error: 'Origine de requête invalide' }, { status: 403 });
+  const host = request.headers.get('host');
+  if (origin && host) {
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost !== host) {
+        return NextResponse.json({ error: 'Origine de requête invalide' }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Origine de requête invalide' }, { status: 403 });
+    }
   }
 
   const contentLength = Number(request.headers.get('content-length') || 0);
@@ -51,6 +59,8 @@ export async function POST(request: NextRequest) {
   const email = typeof form.email === 'string' ? form.email.trim().toLowerCase() : '';
   const whatsapp = typeof form.whatsapp === 'string' ? normalizeWhatsAppNumber(form.whatsapp) : null;
   const consent = form.consent === true;
+  const eventConsent = consent && form.eventConsent !== false;
+  const marketingConsent = form.marketingConsent === true;
   const utm = sanitizeUTMParameters(form);
 
   if (fullName.length < 2 || fullName.length > 100 || /[\u0000-\u001f<>]/.test(fullName)) {
@@ -70,6 +80,8 @@ export async function POST(request: NextRequest) {
     email,
     whatsapp,
     consent,
+    event_consent: eventConsent,
+    marketing_consent: marketingConsent,
     ...utm,
   });
 
