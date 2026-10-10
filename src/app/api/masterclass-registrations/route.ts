@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceRoleClient } from '@/lib/supabase/server';
+import { getSupabaseServerConfigError } from '@/lib/supabase/server-config';
 import { normalizeWhatsAppNumber, sanitizeUTMParameters } from '@/lib/masterclass-registration';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,10 @@ async function getCount() {
 
 export async function GET() {
   const count = await getCount();
-  if (count === null) return NextResponse.json({ error: 'Inscriptions indisponibles' }, { status: 503 });
+  if (count === null) {
+    const configError = getSupabaseServerConfigError();
+    return NextResponse.json({ error: configError ?? 'Inscriptions indisponibles' }, { status: 503 });
+  }
   return NextResponse.json({ count }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
@@ -73,7 +77,10 @@ export async function POST(request: NextRequest) {
   if (!consent) return NextResponse.json({ error: 'Confirme ton accord pour recevoir les informations de la masterclass.' }, { status: 400 });
 
   const service = await getServiceRoleClient();
-  if (!service) return NextResponse.json({ error: 'Les inscriptions sont momentanément indisponibles.' }, { status: 503 });
+  if (!service) {
+    const configError = getSupabaseServerConfigError();
+    return NextResponse.json({ error: configError ?? 'Les inscriptions sont momentanément indisponibles.' }, { status: 503 });
+  }
 
   const { error } = await service.from('masterclass_registrations').insert({
     full_name: fullName,
