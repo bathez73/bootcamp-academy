@@ -426,7 +426,7 @@ export default function MasterclassLanding() {
                   <label htmlFor="masterclass-hero-whatsapp">Numéro WhatsApp international</label>
                   <input id="masterclass-hero-whatsapp" type="tel" autoComplete="tel" inputMode="tel" required value={heroWhatsapp} onChange={(event) => setHeroWhatsapp(event.currentTarget.value)} placeholder="+229 52 52 79 13" />
                   {heroError && <p className="masterclass-form-error" role="alert">{heroError}</p>}
-                  <button ref={heroCtaRef} className="masterclass-button" type="submit" onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↘</span></button>
+                  <button ref={heroCtaRef} className="masterclass-button" type="submit" onClick={() => trackConversion('cta_click')}>Continuer ma réservation <span aria-hidden="true">↘</span></button>
                 </form>
                 <p>Gratuit <span>•</span> En ligne <span>•</span> 19h00 GMT (20h00 Bénin/Cameroun)</p>
               </div>
