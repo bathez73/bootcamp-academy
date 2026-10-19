@@ -3,6 +3,10 @@ import './masterclass.css';
 import type { Metadata } from 'next';
 import { Sora, Inter } from 'next/font/google';
 import { THEME_SWITCH_SCRIPT } from '@/lib/theme';
+import { Suspense } from 'react';
+import { CookieConsent, CookieSettingsLink } from '@/components/CookieConsent';
+import MetaPageTracker from '@/components/MetaPageTracker';
+import InternalPageTracker from '@/components/InternalPageTracker';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -43,7 +47,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#07111f" media="(prefers-color-scheme: dark)" />
         <script dangerouslySetInnerHTML={{ __html: `${THEME_SWITCH_SCRIPT};document.documentElement.classList.add('js');` }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <CookieConsent />
+        <InternalPageTracker />
+        <Suspense fallback={null}><MetaPageTracker /></Suspense>
+        {children}
+        <CookieSettingsLink />
+        <aside className="data-protection-notice" aria-label="Protection des données personnelles">
+          Vos données personnelles sont traitées par Novenetech selon les finalités présentées lors de leur collecte. Pour exercer vos droits ou saisir l&apos;Autorité de protection des données personnelles (APDP) du Bénin, contactez{' '}
+          <a href="mailto:novenetech@gmail.com">novenetech@gmail.com</a>.
+        </aside>
+      </body>
     </html>
   );
 }

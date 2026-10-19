@@ -1,3 +1,4 @@
+import MasterclassMeasurementAdmin from '@/components/MasterclassMeasurementAdmin';
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -70,6 +71,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       <div className="page-tools"><ThemeToggle /></div>
       <p className="accent eyebrow"><b>ADMIN NOVENETECH</b></p>
       <StudentNav/><h1>Pilotage de la cohorte</h1>
+      <MasterclassMeasurementAdmin />
       {!sb && (
         <p className="muted" style={{ fontSize: 14 }}>
           Supabase non configuré : ces compteurs se rempliront dès que le webhook de paiement sera branché.

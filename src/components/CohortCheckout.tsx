@@ -40,6 +40,7 @@ export default function CohortCheckout({ email, userId, payments, approved, chec
       setAwaitingWebhook(false);
       setPaymentInProgress(false);
       if (state.hasAccess) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- confirmation du webhook
         setMessage('Paiement et autorisation confirmés. Redirection vers ton espace…');
         const timer = window.setTimeout(() => router.replace('/dashboard'), 1400);
         return () => window.clearTimeout(timer);

@@ -6,6 +6,3 @@ export const MARKETING_CONFIG = {
   EVENT_DATETIME: '2026-10-24T19:00:00Z',
   OPEN_GRAPH_IMAGE: process.env.NEXT_PUBLIC_OG_IMAGE || null,
 } as const;
-
-export type CookieConsentChoice = 'accepted' | 'refused';
-export const COOKIE_CONSENT_STORAGE_KEY = 'bootcamp_academy_cookie_consent';
