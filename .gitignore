@@ -54,3 +54,5 @@ Thumbs.db
 .vscode/
 .idea/
 *.suo
+/test-results/
+/playwright-report/

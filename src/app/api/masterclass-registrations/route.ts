@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const form = body as Record<string, unknown>;
   if (typeof form.website === 'string' && form.website.trim()) {
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, recorded: false });
   }
 
   const fullName = typeof form.fullName === 'string' ? form.fullName.trim().replace(/\s+/g, ' ') : '';
@@ -65,7 +65,9 @@ export async function POST(request: NextRequest) {
   const consent = form.consent === true;
   const eventConsent = consent && form.eventConsent !== false;
   const marketingConsent = form.marketingConsent === true;
-  const utm = sanitizeUTMParameters(form);
+  // Permission for Meta measurement is separate from event and newsletter consent.
+  const advertisingConsent = form.advertisingConsent === true;
+  const utm = advertisingConsent ? sanitizeUTMParameters(form) : {};
 
   if (fullName.length < 2 || fullName.length > 100 || /[\u0000-\u001f<>]/.test(fullName)) {
     return NextResponse.json({ error: 'Indique ton nom complet.' }, { status: 400 });
@@ -82,25 +84,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: configError ?? 'Les inscriptions sont momentanément indisponibles.' }, { status: 503 });
   }
 
-  const { error } = await service.from('masterclass_registrations').insert({
+  const { data: registration, error } = await service.from('masterclass_registrations').insert({
     full_name: fullName,
     email,
     whatsapp,
     consent,
     event_consent: eventConsent,
     marketing_consent: marketingConsent,
+    advertising_consent: advertisingConsent,
+    advertising_consent_version: advertisingConsent ? 'cookies-v2' : null,
+    advertising_consent_recorded_at: advertisingConsent ? new Date().toISOString() : null,
     ...utm,
-  });
+  }).select('meta_event_id').single();
 
   if (error?.code === '23505') {
     const count = await getCount();
-    return NextResponse.json({ ok: true, alreadyRegistered: true, count: count ?? 0 });
+    return NextResponse.json({ ok: true, recorded: true, alreadyRegistered: true, count: count ?? 0 });
   }
   if (error) {
-    console.error('Masterclass registration failed:', error.message);
+    console.error('Masterclass registration failed');
     return NextResponse.json({ error: 'La réservation n’a pas pu être enregistrée. Réessaie dans un instant.' }, { status: 503 });
   }
 
   const count = await getCount();
-  return NextResponse.json({ ok: true, alreadyRegistered: false, count: count ?? 0 }, { status: 201 });
+  return NextResponse.json({ ok: true, recorded: true, alreadyRegistered: false, eventId: registration.meta_event_id, count: count ?? 0 }, { status: 201 });
 }

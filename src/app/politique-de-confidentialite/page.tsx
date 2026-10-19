@@ -13,7 +13,7 @@ export default function PolitiquePage() {
         <header>
           <p className="masterclass-section-label">Novemetech · Données personnelles</p>
           <h1>Politique de confidentialité</h1>
-          <p className="masterclass-policy-date">Dernière mise à jour : 6 octobre 2026</p>
+          <p className="masterclass-policy-date">Dernière mise à jour : 19 octobre 2026</p>
         </header>
         <article className="masterclass-policy-copy">
           <h2>1. Qui est responsable de vos données ?</h2>
@@ -23,15 +23,21 @@ export default function PolitiquePage() {
           <h2>3. Pourquoi les utilisons-nous ?</h2>
           <ul><li>Gérer votre réservation à la masterclass « De 0 à ton premier client digital ».</li><li>Vous envoyer par e-mail et par WhatsApp le lien d&apos;accès, les rappels et les informations pratiques liées à cet événement.</li><li>Si vous y avez consenti, vous informer de nos futures formations et offres.</li><li>Mesurer l&apos;audience de la page et l&apos;efficacité de nos publicités (Meta Pixel), uniquement si vous l&apos;avez accepté.</li></ul>
           <h2>4. Sur quelle base ?</h2>
-          <p>Votre consentement, que vous donnez en cochant la case du formulaire. Vous pouvez le retirer à tout moment.</p>
+          <p>L’accord donné dans le formulaire concerne l’organisation de la masterclass. L’accord facultatif pour recevoir de futures offres est distinct. Le consentement au suivi publicitaire Meta est recueilli séparément dans le bandeau cookies ; ni l’inscription, ni l’absence de réponse au bandeau ne l’autorisent.</p>
+          <p>Nous comptabilisons les inscriptions réellement enregistrées pour gérer l’événement. Ce décompte interne ne nécessite aucun cookie publicitaire et n’entraîne aucune transmission à Meta lorsque vous refusez le suivi.</p>
           <h2>5. Qui reçoit vos données ?</h2>
           <p>Novenetech et ses prestataires techniques strictement nécessaires : hébergement du site, outil d&apos;envoi d&apos;e-mails, WhatsApp (Meta), plateforme de visioconférence. Nous ne vendons pas vos données. Certains prestataires peuvent être situés hors du Bénin ; dans ce cas, nous veillons à ce qu&apos;ils offrent des garanties de protection suffisantes.</p>
+          <p>Si vous autorisez la mesure publicitaire, Meta reçoit des données techniques de navigation, dont l’adresse IP et les pages consultées, ainsi qu’un événement lors d’une nouvelle inscription confirmée. Le code du site ne lui transmet pas les champs nom, e-mail et WhatsApp du formulaire. Cette mesure n’est pas présentée comme anonyme.</p>
           <h2>6. Combien de temps les conservons-nous ?</h2>
           <p>Pendant la durée nécessaire à l&apos;organisation de la masterclass, puis 12 mois maximum après votre dernière interaction, sauf si vous demandez leur suppression avant.</p>
           <h2>7. Vos droits</h2>
           <p>Conformément à la législation béninoise sur la protection des données personnelles, vous pouvez à tout moment : accéder à vos données, les rectifier, les supprimer, vous opposer à leur traitement, retirer votre consentement ou demander leur portabilité. Écrivez à novenetech@gmail.com ; nous répondons dans un délai raisonnable. Vous pouvez aussi saisir l&apos;Autorité de protection des données personnelles (APDP) du Bénin si vous estimez que vos droits ne sont pas respectés.</p>
           <h2>8. Cookies et Meta Pixel</h2>
           <p>Si vous l&apos;acceptez, nous utilisons le Meta Pixel pour mesurer les inscriptions et améliorer nos publicités. Vous pouvez refuser, et la page fonctionne normalement sans.</p>
+          <p>« Tout accepter », « Tout refuser » et « Personnaliser » sont disponibles dès la première visite. Votre choix est mémorisé dans votre navigateur pendant 180 jours. Les anciens choix non datés nécessitent une nouvelle confirmation. Les cookies nécessaires à la connexion et à la sécurité sont distincts du suivi publicitaire.</p>
+          <p>Le choix est enregistré dans le stockage local du navigateur. Si ce stockage ne permet pas de mémoriser un refus, un cookie technique sans identifiant personnel peut conserver ce refus pendant 180 jours.</p>
+          <p>Le lien « Gérer mes cookies » permet de modifier ou retirer votre accord. Le retrait arrête le suivi, supprime les cookies Meta accessibles au site et peut actualiser la page. Il ne supprime pas rétroactivement les données déjà reçues par Meta ; vous pouvez exercer vos droits auprès de nous et de Meta.</p>
+          <p>Les paramètres de campagne UTM ne sont mémorisés dans le navigateur et associés à l’inscription qu’avec votre accord au suivi publicitaire. La Conversions API de Meta n’est pas activée : aucun envoi publicitaire côté serveur ne contourne votre choix.</p>
           <h2>9. Sécurité</h2>
           <p>Nous prenons des mesures raisonnables pour protéger vos données (connexion HTTPS, accès restreint). Aucun système n&apos;est totalement infaillible.</p>
           <h2>10. Modifications</h2>
