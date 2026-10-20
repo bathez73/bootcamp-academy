@@ -2,6 +2,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { getCookieConsent, getServerConsent, refreshCookieConsent, subscribeCookieConsent } from '@/lib/cookie-consent';
+import { isMetaTrackingEnabled } from '@/lib/tracking-policy';
 import { observeMetaPageView, revokeMetaPixel } from '@/lib/meta-pixel';
 
 export default function MetaPageTracker() {
@@ -10,7 +11,7 @@ export default function MetaPageTracker() {
   const params = useSearchParams();
   const query = params.toString();
   useEffect(() => {
-    if (!consent.marketing) revokeMetaPixel();
+    if (!isMetaTrackingEnabled()) revokeMetaPixel();
     observeMetaPageView(pathname, query);
   }, [pathname, query, consent]);
   useEffect(() => {

@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
   const marketingConsent = form.marketingConsent === true;
   // Permission for Meta measurement is separate from event and newsletter consent.
   const advertisingConsent = form.advertisingConsent === true;
-  const utm = advertisingConsent ? sanitizeUTMParameters(form) : {};
+  // Campaign attribution is automatic; never record automatic tracking as consent.
+  const utm = sanitizeUTMParameters(form);
 
   if (fullName.length < 2 || fullName.length > 100 || /[\u0000-\u001f<>]/.test(fullName)) {
     return NextResponse.json({ error: 'Indique ton nom complet.' }, { status: 400 });

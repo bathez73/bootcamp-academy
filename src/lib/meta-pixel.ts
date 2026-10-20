@@ -1,5 +1,7 @@
 import { MARKETING_CONFIG } from '@/lib/marketing-config';
-import { canReloadAfterWithdrawal, getCookieConsent } from '@/lib/cookie-consent';
+import { canReloadAfterWithdrawal } from '@/lib/cookie-consent';
+import { isMetaTrackingEnabled } from '@/lib/tracking-policy';
+
 type PixelFunction = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void; queue: unknown[][]; push?: PixelFunction;
   loaded?: boolean; version?: string; disablePushState?: boolean;
@@ -13,7 +15,7 @@ let pageViewSent = false;
 const sentConversions = new Set<string>();
 
 export function initializeMetaPixel() {
-  if (typeof window === 'undefined' || !getCookieConsent().marketing || !MARKETING_CONFIG.META_PIXEL_ID) return false;
+  if (typeof window === 'undefined' || !isMetaTrackingEnabled() || !MARKETING_CONFIG.META_PIXEL_ID) return false;
   // Never intentionally expose authentication or contact query parameters.
   if ([...new URLSearchParams(window.location.search).keys()].some(key => /^(email|phone|whatsapp|full_?name|token|token_hash|code|password)$/i.test(key))) return false;
   if (window.metaPixelLoaded) { window.fbq?.('consent', 'grant'); return true; }
@@ -52,13 +54,13 @@ export function observeMetaPageView(pathname: string, query: string, restored = 
   const meaningfulQuery = functionalQuery.toString();
   const view = pathname + (meaningfulQuery ? '?' + meaningfulQuery : '');
   if (restored || view !== currentView) { currentView = view; pageViewSent = false; }
-  if (!COMMERCIAL_PATHS.has(pathname) || !getCookieConsent().marketing || pageViewSent || !initializeMetaPixel()) return;
+  if (!COMMERCIAL_PATHS.has(pathname) || !isMetaTrackingEnabled() || pageViewSent || !initializeMetaPixel()) return;
   window.fbq?.('trackSingle', MARKETING_CONFIG.META_PIXEL_ID, 'PageView', {}, { eventID: crypto.randomUUID() });
   pageViewSent = true;
 }
 export type RegistrationConfirmation = { ok?: boolean; recorded?: boolean; alreadyRegistered?: boolean; eventId?: string };
-export function trackMetaRegistration(result: RegistrationConfirmation, authorizedAtSubmission: boolean) {
-  if (!authorizedAtSubmission || !getCookieConsent().marketing || result.ok !== true ||
+export function trackMetaRegistration(result: RegistrationConfirmation) {
+  if (!isMetaTrackingEnabled() || result.ok !== true ||
     result.recorded !== true || result.alreadyRegistered !== false || !result.eventId ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.eventId) ||
     sentConversions.has(result.eventId) || !initializeMetaPixel()) return;

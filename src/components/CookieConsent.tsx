@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { isMasterclassPath } from '@/lib/tracking-policy';
 import {
   getCookieConsent, getServerConsent, saveCookieConsent, subscribeCookieConsent, openCookiePreferences,
   type CookieConsentChoice,
@@ -8,6 +10,7 @@ import {
 import styles from './CookieConsent.module.css';
 
 export function CookieConsent() {
+  const pathname = usePathname();
   const state = useSyncExternalStore(subscribeCookieConsent, getCookieConsent, getServerConsent);
   const [marketing, setMarketing] = useState(false);
   const [sessionOnly, setSessionOnly] = useState(false);
@@ -25,6 +28,7 @@ export function CookieConsent() {
     setSessionOnly(!saveCookieConsent(choice, allowed));
     panelRef.current?.close();
   }
+  if (isMasterclassPath(pathname)) return null;
   return <div className={styles.root}>
     {state.choice === null && <aside className={styles.banner} aria-label="Vos choix de confidentialité">
       <div className={styles.copy}>
@@ -59,5 +63,7 @@ export function CookieConsent() {
   </div>;
 }
 export function CookieSettingsLink() {
+  const pathname = usePathname();
+  if (isMasterclassPath(pathname)) return null;
   return <div className={styles.root}><div className={styles.manageBar}><button type="button" className="masterclass-cookie-manage" onClick={openCookiePreferences} aria-haspopup="dialog" aria-controls="cookie-preferences">Gérer mes cookies</button></div></div>;
 }

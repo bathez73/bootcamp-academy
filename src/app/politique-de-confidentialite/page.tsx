@@ -13,31 +13,29 @@ export default function PolitiquePage() {
         <header>
           <p className="masterclass-section-label">Novemetech · Données personnelles</p>
           <h1>Politique de confidentialité</h1>
-          <p className="masterclass-policy-date">Dernière mise à jour : 19 octobre 2026</p>
+          <p className="masterclass-policy-date">Dernière mise à jour : 20 octobre 2026</p>
         </header>
         <article className="masterclass-policy-copy">
           <h2>1. Qui est responsable de vos données ?</h2>
           <p>Les données collectées sur cette page sont traitées par Novenetech (NOVENE TECH), établissement exploité en nom propre par Kallon Bathez Odjegnide Bankole, situé à Sèmè-Podji (Ouémé), Bénin. IFU : 0202315600488 · RCCM : RB/PNO/26 A 125964. Contact : novenetech@gmail.com</p>
           <h2>2. Quelles données collectons-nous ?</h2>
-          <ul><li>Nom complet</li><li>Adresse e-mail</li><li>Numéro WhatsApp (avec indicatif du pays)</li><li>Données techniques de navigation (type d&apos;appareil, pages consultées, source de visite), si vous acceptez les cookies de mesure.</li></ul>
+          <ul><li>Nom complet</li><li>Adresse e-mail</li><li>Numéro WhatsApp (avec indicatif du pays)</li><li>Données techniques de navigation (type d&apos;appareil, pages consultées, source de visite).</li></ul>
           <h2>3. Pourquoi les utilisons-nous ?</h2>
-          <ul><li>Gérer votre réservation à la masterclass « De 0 à ton premier client digital ».</li><li>Vous envoyer par e-mail et par WhatsApp le lien d&apos;accès, les rappels et les informations pratiques liées à cet événement.</li><li>Si vous y avez consenti, vous informer de nos futures formations et offres.</li><li>Mesurer l&apos;audience de la page et l&apos;efficacité de nos publicités (Meta Pixel), uniquement si vous l&apos;avez accepté.</li></ul>
+          <ul><li>Gérer votre réservation à la masterclass « De 0 à ton premier client digital ».</li><li>Vous envoyer par e-mail et par WhatsApp le lien d&apos;accès, les rappels et les informations pratiques liées à cet événement.</li><li>Si vous y avez consenti, vous informer de nos futures formations et offres.</li><li>Mesurer l&apos;audience de la page et l&apos;efficacité de nos publicités (Meta Pixel).</li></ul>
           <h2>4. Sur quelle base ?</h2>
-          <p>L’accord donné dans le formulaire concerne l’organisation de la masterclass. L’accord facultatif pour recevoir de futures offres est distinct. Le consentement au suivi publicitaire Meta est recueilli séparément dans le bandeau cookies ; ni l’inscription, ni l’absence de réponse au bandeau ne l’autorisent.</p>
-          <p>Nous comptabilisons les inscriptions réellement enregistrées pour gérer l’événement. Ce décompte interne ne nécessite aucun cookie publicitaire et n’entraîne aucune transmission à Meta lorsque vous refusez le suivi.</p>
+          <p>L’accord donné dans le formulaire concerne l’organisation de la masterclass. L’accord facultatif pour recevoir de futures offres est distinct. La mesure publicitaire de la masterclass se déclenche automatiquement, sans demande d’acceptation des cookies. Elle ne constitue pas un accord aux communications commerciales.</p>
+          <p>Nous comptabilisons aussi les inscriptions réellement enregistrées pour gérer l’événement.</p>
           <h2>5. Qui reçoit vos données ?</h2>
           <p>Novenetech et ses prestataires techniques strictement nécessaires : hébergement du site, outil d&apos;envoi d&apos;e-mails, WhatsApp (Meta), plateforme de visioconférence. Nous ne vendons pas vos données. Certains prestataires peuvent être situés hors du Bénin ; dans ce cas, nous veillons à ce qu&apos;ils offrent des garanties de protection suffisantes.</p>
-          <p>Si vous autorisez la mesure publicitaire, Meta reçoit des données techniques de navigation, dont l’adresse IP et les pages consultées, ainsi qu’un événement lors d’une nouvelle inscription confirmée. Le code du site ne lui transmet pas les champs nom, e-mail et WhatsApp du formulaire. Cette mesure n’est pas présentée comme anonyme.</p>
+          <p>Sur la masterclass, Meta reçoit automatiquement des données techniques de navigation, dont l’adresse IP et les pages consultées, ainsi qu’un événement lors d’une nouvelle inscription confirmée. Le code du site ne lui transmet pas les champs nom, e-mail et WhatsApp du formulaire. Cette mesure n’est pas présentée comme anonyme.</p>
           <h2>6. Combien de temps les conservons-nous ?</h2>
           <p>Pendant la durée nécessaire à l&apos;organisation de la masterclass, puis 12 mois maximum après votre dernière interaction, sauf si vous demandez leur suppression avant.</p>
           <h2>7. Vos droits</h2>
           <p>Conformément à la législation béninoise sur la protection des données personnelles, vous pouvez à tout moment : accéder à vos données, les rectifier, les supprimer, vous opposer à leur traitement, retirer votre consentement ou demander leur portabilité. Écrivez à novenetech@gmail.com ; nous répondons dans un délai raisonnable. Vous pouvez aussi saisir l&apos;Autorité de protection des données personnelles (APDP) du Bénin si vous estimez que vos droits ne sont pas respectés.</p>
           <h2>8. Cookies et Meta Pixel</h2>
-          <p>Si vous l&apos;acceptez, nous utilisons le Meta Pixel pour mesurer les inscriptions et améliorer nos publicités. Vous pouvez refuser, et la page fonctionne normalement sans.</p>
-          <p>« Tout accepter », « Tout refuser » et « Personnaliser » sont disponibles dès la première visite. Votre choix est mémorisé dans votre navigateur pendant 180 jours. Les anciens choix non datés nécessitent une nouvelle confirmation. Les cookies nécessaires à la connexion et à la sécurité sont distincts du suivi publicitaire.</p>
-          <p>Le choix est enregistré dans le stockage local du navigateur. Si ce stockage ne permet pas de mémoriser un refus, un cookie technique sans identifiant personnel peut conserver ce refus pendant 180 jours.</p>
-          <p>Le lien « Gérer mes cookies » permet de modifier ou retirer votre accord. Le retrait arrête le suivi, supprime les cookies Meta accessibles au site et peut actualiser la page. Il ne supprime pas rétroactivement les données déjà reçues par Meta ; vous pouvez exercer vos droits auprès de nous et de Meta.</p>
-          <p>Les paramètres de campagne UTM ne sont mémorisés dans le navigateur et associés à l’inscription qu’avec votre accord au suivi publicitaire. La Conversions API de Meta n’est pas activée : aucun envoi publicitaire côté serveur ne contourne votre choix.</p>
+          <p>Sur la page masterclass, le Meta Pixel est chargé automatiquement : PageView mesure chaque visite et Lead mesure une nouvelle inscription confirmée. Les erreurs et les inscriptions déjà enregistrées ne déclenchent pas de Lead. Meta peut déposer ses cookies publicitaires et recevoir des données techniques de navigation.</p>
+          <p>Les paramètres UTM de la campagne peuvent être mémorisés pendant la session et associés à votre inscription. Votre nom, votre e-mail et votre numéro WhatsApp ne sont pas ajoutés aux événements du Pixel. La Conversions API de Meta n’est pas activée.</p>
+          <p>Sur les pages de formation, le bandeau propose « Tout accepter », « Tout refuser » et « Personnaliser ». Le choix est conservé pendant 180 jours et peut être modifié avec « Gérer mes cookies ». Ce choix concerne les pages de formation ; la masterclass utilise la mesure automatique décrite ci-dessus.</p>
           <h2>9. Sécurité</h2>
           <p>Nous prenons des mesures raisonnables pour protéger vos données (connexion HTTPS, accès restreint). Aucun système n&apos;est totalement infaillible.</p>
           <h2>10. Modifications</h2>

@@ -13,7 +13,7 @@ import {
 } from '@/lib/masterclass-registration';
 import { MARKETING_CONFIG } from '@/lib/marketing-config';
 import { trackMetaRegistration, type RegistrationConfirmation } from '@/lib/meta-pixel';
-import { getCookieConsent, getServerConsent, openCookiePreferences, subscribeCookieConsent } from '@/lib/cookie-consent';
+import { getCookieConsent, subscribeCookieConsent } from '@/lib/cookie-consent';
 
 type RegistrationResult = RegistrationConfirmation & {
   error?: string;
@@ -126,7 +126,7 @@ let cachedUtmLocation = '';
 let cachedUtmParameters = EMPTY_UTM_PARAMETERS;
 
 function getLandingUtmParameters() {
-  if (typeof window === 'undefined' || !getCookieConsent().marketing) return EMPTY_UTM_PARAMETERS;
+  if (typeof window === 'undefined') return EMPTY_UTM_PARAMETERS;
   if (window.location.href === cachedUtmLocation) return cachedUtmParameters;
 
   const fromUrl = getUTMParameters(window.location.href);
@@ -167,13 +167,12 @@ export default function MasterclassLanding() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [whatsAppUrl, setWhatsAppUrl] = useState('');
-  const cookieConsent = useSyncExternalStore(subscribeCookieConsent, getCookieConsent, getServerConsent);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [otherDialCodeSelected, setOtherDialCodeSelected] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [stickyCtaVisible, setStickyCtaVisible] = useState(false);
   const sourceUtmParams = useSyncExternalStore(subscribeCookieConsent, getLandingUtmParameters, () => EMPTY_UTM_PARAMETERS);
-  const utmParams = cookieConsent.marketing ? sourceUtmParams : EMPTY_UTM_PARAMETERS;
+  const utmParams = sourceUtmParams;
   const abidjanTime = useSyncExternalStore(
     subscribeToTimeZoneChanges,
     () => getLocalEventSummary('Africa/Abidjan'),
@@ -329,7 +328,7 @@ export default function MasterclassLanding() {
     trackConversion('form_submit');
 
     const form = new FormData(event.currentTarget);
-    const authorizedAtSubmission = getCookieConsent().marketing;
+    const advertisingConsent = getCookieConsent().marketing;
     const fullName = String(form.get('fullName') || '').trim();
     const countryCode = String(form.get('countryCode') || '');
     const otherDialCode = String(form.get('otherDialCode') || '').trim();
@@ -346,7 +345,7 @@ export default function MasterclassLanding() {
       consent: form.get('consent') === 'on',
       eventConsent: form.get('consent') === 'on',
       marketingConsent: form.get('marketingConsent') === 'on',
-      advertisingConsent: authorizedAtSubmission,
+      advertisingConsent,
       website: String(form.get('website') || ''),
       ...utmParams,
     };
@@ -367,7 +366,7 @@ export default function MasterclassLanding() {
       setWhatsAppUrl(joinGroupUrl);
       if (result.recorded === true && result.alreadyRegistered === false) {
         trackConversion('registration_complete');
-        trackMetaRegistration(result, authorizedAtSubmission);
+        trackMetaRegistration(result);
       }
       document.getElementById('masterclass-registration-confirmation')?.scrollIntoView({ behavior: getScrollBehavior(), block: 'center' });
     } catch {
@@ -720,7 +719,7 @@ export default function MasterclassLanding() {
         <div className="masterclass-shell">
           <p><strong>Bootcamp Academy</strong> by Novenetech</p>
           <span>Novenetech · IFU 0202315600488 · RCCM RB/PNO/26 A 125964 · Sèmè-Podji, Bénin</span>
-          <div><Link href="/politique-de-confidentialite">Politique de confidentialité</Link><button type="button" onClick={openCookiePreferences}>Gérer mes cookies</button></div>
+          <div><Link href="/politique-de-confidentialite">Politique de confidentialité</Link></div>
         </div>
       </footer>
       {stickyCtaVisible && <a className="masterclass-mobile-cta" href={ctaLink('#inscription')} onClick={() => trackConversion('cta_click')}>Je réserve ma place gratuitement <span aria-hidden="true">↗</span></a>}

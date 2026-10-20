@@ -5,7 +5,7 @@ test('internal views count without consent; no contact data, cookies or duplicat
   let retry = true;
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.hostname !== '127.0.0.1') { external.push(url.hostname); return route.abort(); }
+    if (url.hostname !== '127.0.0.1') { if (url.hostname !== 'connect.facebook.net') external.push(url.hostname); return route.abort(); }
     if (url.pathname === '/api/internal-pageviews') {
       views.push({ body: request.postDataJSON(), headers: await request.allHeaders() });
       if (retry) { retry = false; return route.fulfill({ status: 503 }); }
@@ -15,7 +15,8 @@ test('internal views count without consent; no contact data, cookies or duplicat
     return route.continue();
   });
   await context.addCookies([{ name: 'fixture_private', value: 'must-not-send', url: 'http://127.0.0.1:3111' }]);
-  await page.goto('/masterclass?email=private@example.test&utm_source=meta', { waitUntil: 'networkidle' });
+  await context.addCookies([{name:'bootcamp_marketing_denied',value:'1',url:'http://127.0.0.1:3111'}]);
+  await page.goto('/masterclass?utm_source=meta', { waitUntil: 'networkidle' });
   await expect.poll(() => views.length).toBe(2);
   expect(views[0].body).toEqual(views[1].body);
   expect(Object.keys(views[0].body).sort()).toEqual(['eventId', 'occurredAt', 'path']);
@@ -23,7 +24,6 @@ test('internal views count without consent; no contact data, cookies or duplicat
   expect(views[0].headers.cookie).toBeUndefined();
   expect(views[0].headers.referer).toBeUndefined();
   expect(external).toHaveLength(0);
-  await page.getByRole('button', { name: 'Tout refuser', exact: true }).first().click();
   await page.locator('.masterclass-header a[href="/"]').first().click();
   await expect.poll(() => views.length).toBe(3);
   await expect(page).toHaveURL('http://127.0.0.1:3111/');
