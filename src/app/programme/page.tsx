@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import Nav from '@/components/Nav';
+import { BOOTCAMP_SALES_CONFIG as offer } from '@/lib/bootcamp-sales-config';
 import StudentNav from '@/components/StudentNav';
 import { getServerClient } from '@/lib/supabase/server';
 import { getCohortAccess } from '@/lib/cohort-server';
@@ -24,7 +24,7 @@ export default async function Programme() {
 					<div className="grid programme-grid">
 						{weeks.map((title, index) => <section className="card" key={title}><p className="accent">Semaine {index + 1}</p><h2>{title}</h2></section>)}
 					</div>
-					<section className="section"><p>Le contenu complet est réservé aux participants dont le paiement est soldé et l’accès validé par l’équipe.</p><Link href="/inscription" className="btn">Voir les étapes d’inscription</Link></section>
+					<section className="section"><p>Le contenu complet est réservé aux participants dont le paiement est soldé et l’accès validé par l’équipe.</p><a href={offer.fullPaymentUrl} className="btn">{offer.purchaseLabel}</a></section>
 				</main>
 			</div>
 		);

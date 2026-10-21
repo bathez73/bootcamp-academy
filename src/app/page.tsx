@@ -1,13 +1,14 @@
 ﻿import Link from 'next/link';
 import Brand from '@/components/Brand';
 import Nav from '@/components/Nav';
+import { BOOTCAMP_SALES_CONFIG as offer } from '@/lib/bootcamp-sales-config';
 
 const whatsapp = 'https://wa.me/22952527913';
 const faqs = [
   ['Combien de temps par jour ?', 'Le programme avance jour par jour pendant 28 jours. Prévois un créneau régulier pour suivre les missions et mettre en pratique chaque étape.'],
   ['Je n’ai aucune compétence technique, c’est pour moi ?', 'Tu commences par choisir une compétence, une cible et une offre claire. Les missions guidées t’aident ensuite à construire ton portfolio et à préparer ta prospection.'],
   ['De quoi ai-je besoin ?', 'Une connexion Internet, un ordinateur pour réaliser les exercices et la motivation de pratiquer régulièrement. WhatsApp te permet de rejoindre la communauté.'],
-  ['Comment se passe le paiement ?', 'Le tarif de la cohorte est de 25 000 FCFA. Contacte notre équipe sur WhatsApp pour connaître les modalités de paiement et finaliser ton inscription.'],
+  ['Comment se passe le paiement ?', `L’accompagnement complet coûte 25 000 FCFA, en paiement intégral sur Chariow. Il commence le ${offer.startDateLabel}.`],
   ['Et si ça ne marche pas pour moi ?', 'Les résultats dépendent de ton effort et de ta régularité. Même sans première vente, tu repars avec ton offre, ton portfolio, tes scripts de prospection et ton CRM.'],
   ['C’est pour qui, exactement ?', 'Pour les étudiants qui veulent transformer une compétence digitale en service concret, construire un portfolio et apprendre à prospecter leurs premiers clients.'],
 ];
@@ -28,8 +29,10 @@ export default function Home() {
                 <span>CRM structuré</span>
                 <span>Première vente</span>
               </div>
+              <p>Accompagnement payant : début le {offer.startDateLabel}.</p>
+              <p>Masterclass gratuite : {offer.masterclassDateLabel}. <Link className="text-link" href="/masterclass#inscription">Je réserve ma place gratuitement</Link></p>
               <div className="home-actions">
-                <Link className="btn" href="/inscription">Rejoindre la cohorte — 25 000 FCFA →</Link>
+                <a className="btn" href={offer.fullPaymentUrl}>{offer.purchaseLabel}</a>
                 <Link className="btn btn2" href="/programme">Voir le programme</Link>
               </div>
             </div>
@@ -53,7 +56,7 @@ export default function Home() {
               </div>
               <hr />
               <p>✓ Offre monétisable</p><p>✓ Mini-portfolio</p><p>✓ Scripts de prospection</p><p>✓ CRM personnel</p><p>✓ Challenge premier client</p>
-              <small className="muted">Encadrement réel pendant 4 semaines</small>
+              <small className="muted">Paiement intégral • début le {offer.startDateLabel}</small>
             </div>
           </section>
           <ul className="home-highlights" aria-label="Les points forts du programme">
@@ -106,9 +109,9 @@ export default function Home() {
           <section className="section">
             <div className="card home-join">
               <h2>Ta place dans la cohorte t’attend.</h2>
-              <p>Réserve maintenant — place validée après paiement.</p>
+              <p>Paiement intégral de 25 000 FCFA sur Chariow — place confirmée après vérification du paiement.</p>
               <div className="home-actions">
-                <Link className="btn" href="/inscription">Rejoindre la cohorte — 25 000 FCFA →</Link>
+                <a className="btn" href={offer.fullPaymentUrl}>{offer.purchaseLabel}</a>
                 <a className="btn btn2" href={whatsapp} target="_blank" rel="noopener noreferrer">Pose ta question sur WhatsApp</a>
               </div>
             </div>
@@ -119,7 +122,7 @@ export default function Home() {
         <div className="wrap">
           <Brand />
           <nav className="home-footer-links" aria-label="Navigation de pied de page">
-            <Link href="/programme">Programme</Link><Link href="/inscription">Rejoindre la cohorte</Link><Link href="/dashboard">Espace étudiant</Link><a href={whatsapp} target="_blank" rel="noopener noreferrer">22952527913</a>
+            <Link href="/programme">Programme</Link><a href={offer.fullPaymentUrl}>Rejoindre l’accompagnement</a><Link href="/dashboard">Espace étudiant</Link><a href={whatsapp} target="_blank" rel="noopener noreferrer">22952527913</a>
           </nav>
           <small className="muted">© 2026 Novenetech — Challenge 28 jours • 25 000 FCFA • encadrement 4 semaines</small>
         </div>
