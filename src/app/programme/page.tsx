@@ -13,7 +13,7 @@ export default async function Programme() {
 	const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 	const access = user ? await getCohortAccess(user.id) : null;
 
-	if (!access?.state.hasAccess) {
+	if (!access?.approved) {
 		return (
 			<div className="wrap">
 				<Nav />

@@ -1,25 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getCohortPaymentState } from '../src/lib/cohort-access.ts';
+import { hasCohortAccess } from '../src/lib/cohort-access.ts';
 
-test('cohort access requires full settlement and manual approval', () => {
-  const notPaid = getCohortPaymentState([]);
-  assert.equal(notPaid.hasAccess, false);
-  assert.equal(notPaid.remaining, 25000);
-
-  const deposit = getCohortPaymentState([{ amount: 5000, verified: true }]);
-  assert.equal(deposit.hasAccess, false);
-  assert.equal(deposit.remaining, 20000);
-
-  const full = getCohortPaymentState([{ amount: 5000, verified: true }, { amount: 20000, verified: true }]);
-  assert.equal(full.settled, true);
-  assert.equal(full.hasAccess, false);
-  assert.equal(full.remaining, 0);
-
-  const approved = getCohortPaymentState([{ amount: 5000, verified: true }, { amount: 20000, verified: true }], true);
-  assert.equal(approved.hasAccess, true);
-
-  const unverified = getCohortPaymentState([{ amount: 5000, verified: null }, { amount: 20000, verified: true }], true);
-  assert.equal(unverified.settled, false);
-  assert.equal(unverified.hasAccess, false);
+test('cohort access requires explicit admin approval', () => {
+  assert.equal(hasCohortAccess(null), false);
+  assert.equal(hasCohortAccess(undefined), false);
+  assert.equal(hasCohortAccess({}), false);
+  assert.equal(hasCohortAccess({ cohort_access_approved: null }), false);
+  assert.equal(hasCohortAccess({ cohort_access_approved: false }), false);
+  assert.equal(hasCohortAccess({ cohort_access_approved: true }), true);
 });

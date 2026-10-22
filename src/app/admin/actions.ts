@@ -13,24 +13,20 @@ export async function setCohortAccessApproval(formData: FormData) {
   const { data: adminProfile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
   if (adminProfile?.is_admin !== true) redirect('/dashboard');
 
-  const studentId = String(formData.get('student_id') || '');
   const approve = formData.get('approve') === 'true';
-  if (!/^[0-9a-f-]{36}$/i.test(studentId)) redirect('/admin?approval=invalid');
-
   const service = await getServiceRoleClient();
   if (!service) redirect('/admin?approval=unavailable');
 
-  if (approve) {
-    const { data: payments, error: paymentsError } = await service
-      .from('payments')
-      .select('amount, verified')
-      .eq('user_id', studentId)
-      .eq('formation', 'Challenge 28 jours')
-      .eq('verified', true);
-    if (paymentsError || (payments || []).reduce((sum, row) => sum + Number(row.amount || 0), 0) < 25000) {
-      redirect('/admin?approval=not_settled');
-    }
+  // Le paiement est vérifié par l'administrateur dans Chariow : on retrouve le compte par son email.
+  let studentId = String(formData.get('student_id') || '');
+  const email = String(formData.get('email') || '').trim().toLowerCase();
+  if (!studentId && email) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect('/admin?approval=invalid');
+    const { data: match } = await service.from('profiles').select('id').ilike('email', email.replace(/[%_\\]/g, '\\$&')).maybeSingle();
+    if (!match) redirect('/admin?approval=not_found');
+    studentId = match.id;
   }
+  if (!/^[0-9a-f-]{36}$/i.test(studentId)) redirect('/admin?approval=invalid');
 
   const { error } = await service.from('profiles').update({
     cohort_access_approved: approve,

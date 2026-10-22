@@ -31,7 +31,7 @@ export default async function Inscription({ searchParams }: { searchParams: Prom
 					<a className="btn" href={offer.fullPaymentUrl}>{offer.purchaseLabel}</a>
 				</p>
 				<p className="muted">
-					Ta place est confirmée après vérification du paiement par l’équipe. Ton accès aux cours est ensuite ouvert dans ton espace étudiant.
+					Après ton paiement, <Link className="text-link" href="/signup">crée ton compte</Link> avec le même email que sur Chariow. L’équipe vérifie ton paiement puis ouvre ton accès à l’espace étudiant.
 				</p>
 
 				<section className="section card">

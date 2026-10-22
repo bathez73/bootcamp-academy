@@ -2,13 +2,11 @@ $ErrorActionPreference = 'Stop'
 $envPath = Join-Path (Split-Path $PSScriptRoot -Parent) '.env.local'
 if (-not (Test-Path -LiteralPath $envPath)) { throw 'Fichier .env.local introuvable.' }
 
-Write-Host 'Configuration Kkiapay / Brevo pour Novenetech Campus'
+Write-Host 'Configuration Brevo pour Novenetech Campus'
 Write-Host 'Entree sans valeur conserve la configuration existante.'
 Write-Host 'Les secrets saisis sont masques et ne seront pas affiches.'
 
 $fields = @(
-    @{ Name = 'NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY'; Label = 'Cle PUBLIQUE Kkiapay SANDBOX'; Secret = $false },
-    @{ Name = 'KKIAPAY_WEBHOOK_SECRET'; Label = 'Secret hash du webhook Kkiapay SANDBOX'; Secret = $true },
     @{ Name = 'BREVO_API_KEY'; Label = 'Cle API Brevo (pas la cle SMTP)'; Secret = $true },
     @{ Name = 'SENDER_EMAIL'; Label = 'Adresse expediteur validee dans Brevo'; Secret = $false },
     @{ Name = 'SITE_URL'; Label = 'Adresse HTTPS publique de Campus, si disponible'; Secret = $false }
@@ -46,5 +44,4 @@ foreach ($name in $updates.Keys) {
 }
 [IO.File]::WriteAllText($envPath, $content, [Text.UTF8Encoding]::new($false))
 Write-Host 'Configuration enregistree localement. Redemarrer Campus pour appliquer les valeurs.'
-Write-Host 'Le mode de paiement existant est conserve. Aucun paiement effectue.'
 Write-Host 'Si SITE_URL a change, faire aussi mettre a jour les redirections Supabase.'

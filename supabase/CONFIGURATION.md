@@ -104,7 +104,7 @@ définir les variables dans l'hébergement. Les variables de l'hébergement n'on
 pas été modifiées depuis cette session.
 
 La clé `SUPABASE_SERVICE_ROLE_KEY` est maintenant renseignée dans `.env.local`
-après autorisation explicite. Les paramètres Kkiapay et Brevo restent manquants.
+après autorisation explicite. Les paramètres Brevo restent manquants.
 Pour les saisir localement sans afficher les secrets, exécuter depuis le dossier
 du projet :
 
@@ -113,12 +113,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure-serv
 ```
 
 La clé service_role doit rester uniquement dans l'environnement serveur.
-Conserver des environnements distincts pour les achats sandbox et réels.
 L'expéditeur fourni `novenetech@gmail.com` est renseigné dans `.env.local`.
 Sa validation effective dans Brevo reste à vérifier avec la clé API.
-L'URL du webhook à renseigner chez Kkiapay sera
-`https://bootcamp-academy.lvh.bj/api/kkiapay-webhook` après déploiement de cette
-version et des variables serveur. Aucun paiement test ou réel n'a été lancé.
+Les paiements se font sur Chariow : aucun webhook de paiement n'est à configurer.
 
 Références : [clés API](https://supabase.com/docs/guides/getting-started/api-keys)
 et [redirections Auth](https://supabase.com/docs/guides/auth/redirect-urls).
